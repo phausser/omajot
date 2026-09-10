@@ -162,10 +162,15 @@ Theme: Overlay folgt `Tokyo Night` (dunkle Karte) und wieder `Catppuccin Latte`.
 
 Ein schnelles Enter hat dieselbe Zeile zweimal angehängt, weil die Schreibsperre
 vor `dismiss` fiel. Erfolgspfad räumt den Entwurf jetzt vor dem Freigeben der
-Sperre ab; danach genau eine Zeile. Deutsche Umlaute äöü kommen über den
-Keysym-Fallback. Dead-Acute+a ergibt nur `a`, nicht `á`. Emoji/CJK brauchen
-IME/`event.text` und sind mit dem Key-Catcher noch nicht in der Sitzung
-nachgewiesen. Offen: IME/Compose und Emoji/CJK.
+Sperre ab; danach genau eine Zeile.
+
+IME-Anlauf 2026-09-10: `TextInput` ist wieder das fokussierte Feld (SPEC), mit
+Keysym-Fallback wenn `event.text` leer ist. Buchstaben und äöü erscheinen in
+der Sitzung. Dead-Acute+a ergibt weiter nur `a`; `OnDemand` statt Exclusive
+ändert das nicht. Ctrl+V liest `Quickshell.clipboardText` (Controller-Test mit
+漢字😀); `wl-copy` füllt diesen Puffer hier nicht, natives TextInput-Paste
+auf dem Layer ebenfalls nicht. Offen: IME/Compose in der Sitzung und
+Emoji/CJK sichtbar in der Zeile.
 
 ## 6. Docs zum Shippen
 

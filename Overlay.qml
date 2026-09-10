@@ -15,6 +15,7 @@ Item {
   readonly property string moduleName: "io.github.phausser.omajot"
   property bool opened: false
   property bool saving: false
+  property bool composePending: false
   property string errorText: ""
   property var writeFinished: null
   // These host token groups are declared as QtObject, with dynamic members.
@@ -33,6 +34,7 @@ Item {
       }
     }
     root.opened = true
+    root.composePending = false
     Qt.callLater(function() { if (root.opened) input.forceActiveFocus() })
   }
 
@@ -41,6 +43,7 @@ Item {
     if (!root.saving) {
       input.clear()
       root.errorText = ""
+      root.composePending = false
     }
   }
 
@@ -89,9 +92,26 @@ Item {
     })
   }
 
+  function isDeadKey(key) {
+    return key >= Qt.Key_Dead_Grave && key <= Qt.Key_Dead_Longsolidusoverlay
+  }
+
+  function insertChunk(chunk) {
+    var current = input.text
+    var pos = typeof input.cursorPosition === "number" ? input.cursorPosition : current.length
+    var next = "" + current.slice(0, pos) + chunk + current.slice(pos)
+    if (next.length > Model.maximumLength)
+      next = next.slice(0, Model.maximumLength)
+    var inserted = next.length - current.length
+    input.text = next
+    if (typeof input.cursorPosition === "number")
+      input.cursorPosition = pos + inserted
+  }
+
   // fcitx often leaves KeyEvent.text empty on layer-shell while still
   // delivering keysyms (Escape works, letters do not). Prefer event.text
   // when present; otherwise map the keysym like a US/Latin key.
+  // Dead keys and the following key go to TextInput so Compose/IME can run.
   function textFromEvent(event) {
     if (event.text) {
       var out = ""
@@ -121,11 +141,17 @@ Item {
       return
     }
     if (event.key === Qt.Key_Escape) {
+      root.composePending = false
       root.dismiss()
       event.accepted = true
       return
     }
+    if (input.inputMethodComposing) {
+      event.accepted = false
+      return
+    }
     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+      root.composePending = false
       root.save()
       event.accepted = true
       return
@@ -137,20 +163,48 @@ Item {
     if (event.key === Qt.Key_U && event.modifiers === Qt.ControlModifier) {
       input.clear()
       root.errorText = ""
+      root.composePending = false
       event.accepted = true
+      return
+    }
+    if (event.key === Qt.Key_V && event.modifiers === Qt.ControlModifier) {
+      var clip = Quickshell.clipboardText || ""
+      clip = clip.replace(/[\r\n\u2028\u2029]+/g, " ")
+      if (clip) {
+        root.insertChunk(clip)
+        root.composePending = false
+        event.accepted = true
+        return
+      }
+      event.accepted = false
+      return
+    }
+    if (root.isDeadKey(event.key)) {
+      root.composePending = true
+      event.accepted = false
+      return
+    }
+    if (root.composePending) {
+      root.composePending = false
+      if (event.text) {
+        var composed = root.textFromEvent(event)
+        if (composed) root.insertChunk(composed)
+        event.accepted = !!composed
+        return
+      }
+      event.accepted = false
       return
     }
     if (Util.editsFilter(event, input.text)) {
       input.text = Util.editedFilter(event, input.text)
+      if (typeof input.cursorPosition === "number")
+        input.cursorPosition = input.text.length
       event.accepted = true
       return
     }
     var chunk = root.textFromEvent(event)
     if (chunk) {
-      var next = input.text + chunk
-      if (next.length > Model.maximumLength)
-        next = next.slice(0, Model.maximumLength)
-      input.text = next
+      root.insertChunk(chunk)
       event.accepted = true
       return
     }
@@ -206,17 +260,6 @@ Item {
 
       MouseArea { anchors.fill: parent; onClicked: input.forceActiveFocus() }
 
-      Item {
-        id: input
-        anchors.fill: parent
-        property string text: ""
-        property bool inputMethodComposing: false
-        function clear() { text = "" }
-        focus: true
-        Keys.priority: Keys.BeforeItem
-        Keys.onPressed: function(event) { root.handleKey(event) }
-      }
-
       Column {
         id: content
         anchors.left: parent.left
@@ -229,12 +272,12 @@ Item {
 
         Item {
           width: content.width
-          height: fieldText.implicitHeight + root.spacingTokens.controlPaddingY * 2
+          height: input.font.pixelSize + root.spacingTokens.controlPaddingY * 2
 
           Text {
             anchors.fill: parent
             verticalAlignment: Text.AlignVCenter
-            visible: input.text.length === 0
+            visible: input.text.length === 0 && !input.inputMethodComposing
             text: "jot ▸"
             textFormat: Text.PlainText
             color: Color.muted
@@ -242,32 +285,23 @@ Item {
             font.pixelSize: root.fontTokens.heading
           }
 
-          Text {
-            id: fieldText
+          TextInput {
+            id: input
             anchors.fill: parent
-            verticalAlignment: Text.AlignVCenter
-            visible: input.text.length > 0
-            text: input.text
-            textFormat: Text.PlainText
-            elide: Text.ElideRight
+            verticalAlignment: TextInput.AlignVCenter
+            clip: true
+            focus: true
+            activeFocusOnPress: true
+            selectByMouse: true
+            readOnly: root.saving
+            maximumLength: Model.maximumLength
             color: root.menuColors.text
+            selectionColor: root.menuColors.selectedBackground
+            selectedTextColor: root.menuColors.selectedText
             font.family: root.fontTokens.menuFamily
             font.pixelSize: root.fontTokens.heading
-          }
-
-          Rectangle {
-            visible: root.opened && input.text.length > 0
-            width: Math.max(1, Style.space(2))
-            height: fieldText.font.pixelSize
-            anchors.verticalCenter: parent.verticalCenter
-            x: Math.min(fieldMetrics.width, parent.width - width)
-            color: root.menuColors.text
-          }
-
-          TextMetrics {
-            id: fieldMetrics
-            font: fieldText.font
-            text: input.text
+            Keys.priority: Keys.BeforeItem
+            Keys.onPressed: function(event) { root.handleKey(event) }
           }
         }
 
