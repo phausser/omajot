@@ -175,21 +175,31 @@ Compose-Tabelle 2026-09-10: `Key_Dead_Acute` plus `a` wird im Controller zu `á`
 Die deutsche Dead-Acute-Taste (KEY_EQUAL unter Layout `de`) kommt in der
 Sitzung nicht als KeyEvent an — fcitx/`text-input-v3` auf Layer-Shell
 schluckt sie, danach fällt nur `a` ein. Ohne diesen Event kann die Tabelle
-in der Sitzung nicht greifen. Offen: IME/Compose in der Sitzung und
-Emoji/CJK sichtbar in der Zeile.
+in der Sitzung nicht greifen.
+
+v1-Entscheidung 2026-09-10: IME/Compose und Emoji/CJK bleiben ungeprüft offen.
+Die Lücke wird dokumentiert; Abschnitt 6 folgt trotzdem, damit v1 shippen
+kann. Die Kästen werden nicht als bestanden markiert.
 
 ## 6. Docs zum Shippen
 
-- [ ] README: Unsandbox-Hinweis, Schreibpfad `~/omajot.md`, Install, Hotkey, Remove
-- [ ] Install-Befehl:
+- [x] README: Unsandbox-Hinweis, Schreibpfad `~/omajot.md`, Install, Hotkey, Remove
+- [x] Install-Befehl:
 
 ```bash
 omarchy plugin add https://github.com/phausser/omajot.git
 ```
 
-- [ ] Enable bewusst getrennt, Code erst lesen
-- [ ] SPEC.md im Repo halten
-- [ ] id in Manifest/QML/README identisch
+- [x] Enable bewusst getrennt, Code erst lesen
+- [x] SPEC.md im Repo halten
+- [x] id in Manifest/QML/README identisch
+
+README 2026-09-10: id `io.github.phausser.omajot` in Manifest, `Overlay.qml`
+(`moduleName`) und README identisch. Install ist `omarchy plugin add` ohne
+`--enable`; Enable erst nach dem Lesen von Overlay und Modell. Hotkey liegt
+in Hyprland, nicht im Plugin; `Super + Shift + N` als Editor-Belegung genannt.
+Remove-Hinweis: `~/omajot.md` bleibt. SPEC.md liegt im Repo. v1-Grenze zu
+IME/Compose/CJK steht unter Input.
 
 ## 7. Release
 
