@@ -46,18 +46,33 @@ aber noch nicht per Tastatureingabe geprüft. Noch keine Eingabe oder Persistenz
 
 ## 2. Modell
 
-- [ ] `OmajotModel.js`
-- [ ] Pfad `~/omajot.md` auflösen (`~` → Home)
-- [ ] **kein** `mkdir` für Notes oder App-Datenordner
-- [ ] fehlt die Datei: nur `omajot.md` im Home anlegen
-- [ ] Zeile formatieren: `YYYY-MM-DD HH:mm  <text>\n`
-- [ ] Trim; leerer Text → kein Write
-- [ ] Cap bei 4000 Zeichen
-- [ ] Append UTF-8
-- [ ] Fehler als String zurück
-- [ ] Modelltests für Trim, leere Eingaben, lokales Zeitformat, Unicode und 4000-Zeichen-Grenze
-- [ ] Dateitests mit temporären Dateien: Anlegen, Append ohne Überschreiben und Schreibfehler
+- [x] `OmajotModel.js`
+- [x] Pfad `~/omajot.md` auflösen (`~` → Home)
+- [x] **kein** `mkdir` für Notes oder App-Datenordner
+- [x] fehlt die Datei: nur `omajot.md` im Home anlegen
+- [x] Zeile formatieren: `YYYY-MM-DD HH:mm  <text>\n`
+- [x] Trim; leerer Text → kein Write
+- [x] Cap bei 4000 Zeichen
+- [x] Append UTF-8
+- [x] Fehler als String zurück (asynchroner Callback)
+- [x] Modelltests für Trim, leere Eingaben, lokales Zeitformat, Unicode und 4000-Zeichen-Grenze
+- [x] Dateitests mit temporären Dateien: Anlegen, Append ohne Überschreiben und Schreibfehler
 - [ ] Modell- und Dateitests in der GitHub-Actions-Pipeline ausführen
+
+Stand 2026-09-10: Modell- und Dateitests lokal mit `TZ=Europe/Berlin` und
+`TZ=America/New_York` erfolgreich; Plugin-Validierung und `git diff --check`
+erfolgreich. Beide Tests im Workflow ergänzt, tatsächlicher GitHub-Lauf noch offen.
+Zeilenumbrüche werden zu Leerzeichen; das Limit zählt passend zu QML
+UTF-16-Einheiten und trennt keine Surrogatpaare.
+Nutzerentscheidung: lokaler Append-Hilfsprozess mit asynchroner Rückmeldung
+erlaubt; SPEC und AGENTS entsprechend angepasst. `append(text, home, run, done)`
+erhält den Prozessadapter vom Host; `done` liefert einen leeren String bei
+Erfolg oder den festgelegten Fehlertext. Der feste Shell-Befehl übergibt Text
+und Pfad als Argumente und öffnet ausschließlich mit Append.
+Dateitests prüfen zusätzlich Literalübergabe, Prozessfehler und eine durch
+Dateigrößenlimit erzwungene Schreibstörung (kein echter voller Datenträger).
+Die QML-Process-Anbindung einschließlich Startfehlerbehandlung und Sperre
+gegen parallele Writes sowie Erhalt der Eingabe folgt mit der UI in Abschnitt 3.
 
 ## 3. Overlay-UI
 

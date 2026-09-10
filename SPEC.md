@@ -173,7 +173,12 @@ Verantwortlichkeiten:
 - Keine Symlinks im Plugin-Ordner.
 - Kein Anlegen eines eigenen Datenverzeichnisses.
 
-Schreiben synchron und klein. Bei Write-Fehler Overlay offen lassen und eine Statuszeile zeigen (`couldn't write ~/omajot.md`).
+Schreiboperationen klein halten. Ein kurzer lokaler Append-Hilfsprozess meldet
+Erfolg oder Fehler asynchron zurück (Nutzerentscheidung vom 2026-09-10).
+Kein weiterer Quickshell-Prozess. Das Overlay schließt erst nach bestätigtem
+Erfolg; während eines Writes keine weiteren Schreibstarts zulassen.
+Bei Write-Fehler Overlay offen lassen und eine Statuszeile zeigen
+(`couldn't write ~/omajot.md`).
 
 ## 9. Fehlerfälle
 
