@@ -14,7 +14,7 @@ function overlay() {
     clear() { this.text = ''; this.cursorPosition = 0; },
     forceActiveFocus() {}
   };
-  const root = { opened: false, saving: false, composePending: false, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
+  const root = { opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
   const writer = { running: false, command: [] };
   const model = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../OmajotModel.js'), 'utf8'), model);
@@ -31,6 +31,9 @@ function overlay() {
     Key_V: 0x56,
     Key_Dead_Grave: 0x01001250,
     Key_Dead_Acute: 0x01001251,
+    Key_Dead_Circumflex: 0x01001252,
+    Key_Dead_Tilde: 0x01001253,
+    Key_Dead_Diaeresis: 0x01001257,
     Key_Dead_Longsolidusoverlay: 0x01001293,
     ControlModifier: 0x04000000,
     AltModifier: 0x08000000,
@@ -197,25 +200,20 @@ test('handleKey inserts from event.text or keysym when text is empty', () => {
   assert.equal(ui.input.text, 'aBä漢字😀');
 });
 
-test('dead keys and the next key are left for TextInput compose', () => {
+test('dead acute plus a letter composes without IME', () => {
   const ui = overlay();
   ui.open('');
   const event = (key, text, modifiers = 0) => ({ key, text, modifiers, accepted: false });
   const dead = event(0x01001251, '');
   ui.root.handleKey(dead);
-  assert.equal(dead.accepted, false);
+  assert.equal(dead.accepted, true);
   assert.equal(ui.input.text, '');
-  assert.equal(ui.root.composePending, true);
+  assert.equal(ui.root.pendingDead, 0x01001251);
   const letter = event(0x41, '');
   ui.root.handleKey(letter);
-  assert.equal(letter.accepted, false);
-  assert.equal(ui.input.text, '');
-  assert.equal(ui.root.composePending, false);
-  ui.root.handleKey(event(0x01001251, ''));
-  const composed = event(0x41, 'á');
-  ui.root.handleKey(composed);
+  assert.equal(letter.accepted, true);
   assert.equal(ui.input.text, 'á');
-  assert.equal(composed.accepted, true);
+  assert.equal(ui.root.pendingDead, 0);
 });
 
 test('Ctrl+V inserts clipboard text into the field', () => {

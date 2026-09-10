@@ -15,7 +15,7 @@ Item {
   readonly property string moduleName: "io.github.phausser.omajot"
   property bool opened: false
   property bool saving: false
-  property bool composePending: false
+  property int pendingDead: 0
   property string errorText: ""
   property var writeFinished: null
   // These host token groups are declared as QtObject, with dynamic members.
@@ -34,7 +34,7 @@ Item {
       }
     }
     root.opened = true
-    root.composePending = false
+    root.pendingDead = 0
     Qt.callLater(function() { if (root.opened) input.forceActiveFocus() })
   }
 
@@ -43,7 +43,7 @@ Item {
     if (!root.saving) {
       input.clear()
       root.errorText = ""
-      root.composePending = false
+      root.pendingDead = 0
     }
   }
 
@@ -96,6 +96,29 @@ Item {
     return key >= Qt.Key_Dead_Grave && key <= Qt.Key_Dead_Longsolidusoverlay
   }
 
+  // Pair string: letter then replacement, for dead-key compose without IME.
+  function composeChar(dead, letter) {
+    if (!letter) return ""
+    var table = ""
+    if (dead === Qt.Key_Dead_Acute)
+      table = "aáeéiíoóuúyýAÁEÉIÍOÓUÚYÝcćCĆnńNŃsśSŚzźZŹ"
+    else if (dead === Qt.Key_Dead_Grave)
+      table = "aàeèiìoòuùAÀEÈIÌOÒUÙ"
+    else if (dead === Qt.Key_Dead_Circumflex)
+      table = "aâeêiîoôuûAÂEÊIÎOÔUÛ"
+    else if (dead === Qt.Key_Dead_Tilde)
+      table = "aãeñoõAÃEÑOÕ"
+    else if (dead === Qt.Key_Dead_Diaeresis)
+      table = "aäeëiïoöuüyÿAÄEËIÏOÖUÜYŸ"
+    var i = 0
+    while (i + 1 < table.length) {
+      if (table.charAt(i) === letter)
+        return table.charAt(i + 1)
+      i += 2
+    }
+    return ""
+  }
+
   function insertChunk(chunk) {
     var current = input.text
     var pos = typeof input.cursorPosition === "number" ? input.cursorPosition : current.length
@@ -111,7 +134,8 @@ Item {
   // fcitx often leaves KeyEvent.text empty on layer-shell while still
   // delivering keysyms (Escape works, letters do not). Prefer event.text
   // when present; otherwise map the keysym like a US/Latin key.
-  // Dead keys and the following key go to TextInput so Compose/IME can run.
+  // Dead keys are composed here: fcitx on layer-shell often swallows them
+  // before TextInput sees a preedit, and leaves the follow-up letter empty.
   function textFromEvent(event) {
     if (event.text) {
       var out = ""
@@ -141,7 +165,7 @@ Item {
       return
     }
     if (event.key === Qt.Key_Escape) {
-      root.composePending = false
+      root.pendingDead = 0
       root.dismiss()
       event.accepted = true
       return
@@ -151,7 +175,7 @@ Item {
       return
     }
     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-      root.composePending = false
+      root.pendingDead = 0
       root.save()
       event.accepted = true
       return
@@ -163,7 +187,7 @@ Item {
     if (event.key === Qt.Key_U && event.modifiers === Qt.ControlModifier) {
       input.clear()
       root.errorText = ""
-      root.composePending = false
+      root.pendingDead = 0
       event.accepted = true
       return
     }
@@ -172,7 +196,7 @@ Item {
       clip = clip.replace(/[\r\n\u2028\u2029]+/g, " ")
       if (clip) {
         root.insertChunk(clip)
-        root.composePending = false
+        root.pendingDead = 0
         event.accepted = true
         return
       }
@@ -180,16 +204,23 @@ Item {
       return
     }
     if (root.isDeadKey(event.key)) {
-      root.composePending = true
-      event.accepted = false
+      root.pendingDead = event.key
+      event.accepted = true
       return
     }
-    if (root.composePending) {
-      root.composePending = false
-      if (event.text) {
-        var composed = root.textFromEvent(event)
-        if (composed) root.insertChunk(composed)
-        event.accepted = !!composed
+    if (root.pendingDead) {
+      var dead = root.pendingDead
+      root.pendingDead = 0
+      var letter = root.textFromEvent(event)
+      var composed = root.composeChar(dead, letter)
+      if (composed) {
+        root.insertChunk(composed)
+        event.accepted = true
+        return
+      }
+      if (letter) {
+        root.insertChunk(letter)
+        event.accepted = true
         return
       }
       event.accepted = false

@@ -169,7 +169,13 @@ Keysym-Fallback wenn `event.text` leer ist. Buchstaben und äöü erscheinen in
 der Sitzung. Dead-Acute+a ergibt weiter nur `a`; `OnDemand` statt Exclusive
 ändert das nicht. Ctrl+V liest `Quickshell.clipboardText` (Controller-Test mit
 漢字😀); `wl-copy` füllt diesen Puffer hier nicht, natives TextInput-Paste
-auf dem Layer ebenfalls nicht. Offen: IME/Compose in der Sitzung und
+auf dem Layer ebenfalls nicht.
+
+Compose-Tabelle 2026-09-10: `Key_Dead_Acute` plus `a` wird im Controller zu `á`.
+Die deutsche Dead-Acute-Taste (KEY_EQUAL unter Layout `de`) kommt in der
+Sitzung nicht als KeyEvent an — fcitx/`text-input-v3` auf Layer-Shell
+schluckt sie, danach fällt nur `a` ein. Ohne diesen Event kann die Tabelle
+in der Sitzung nicht greifen. Offen: IME/Compose in der Sitzung und
 Emoji/CJK sichtbar in der Zeile.
 
 ## 6. Docs zum Shippen
