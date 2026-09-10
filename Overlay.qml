@@ -3,7 +3,6 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
-import QtQuick.Controls
 import qs.Commons
 import qs.Ui
 import "OmajotModel.js" as Model
@@ -73,18 +72,89 @@ Item {
     root.saving = true
     root.errorText = ""
     Model.append(input.text, Quickshell.env("HOME"), root.runWrite, function(error) {
-      root.saving = false
       if (error === "") {
+        // Drop the draft and host panel before releasing the write lock.
+        // A second Enter can arrive after a fast printf and must not append again.
+        input.clear()
+        root.errorText = ""
         root.dismiss()
+        root.saving = false
       } else {
+        root.saving = false
         root.errorText = error
-        // A host Hide/Toggle may have hidden the panel while the write ran.
-        // Restore both host state and the unchanged draft on failure.
         if (!root.opened && root.shell && typeof root.shell.summon === "function")
           root.shell.summon(root.moduleName, "{}")
         root.open("{}")
       }
     })
+  }
+
+  // fcitx often leaves KeyEvent.text empty on layer-shell while still
+  // delivering keysyms (Escape works, letters do not). Prefer event.text
+  // when present; otherwise map the keysym like a US/Latin key.
+  function textFromEvent(event) {
+    if (event.text) {
+      var out = ""
+      for (var i = 0; i < event.text.length; i++) {
+        var code = event.text.charCodeAt(i)
+        if (code >= 32 && code !== 127) out += event.text.charAt(i)
+      }
+      if (out.length) return out
+    }
+    if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
+      return ""
+    var key = event.key
+    var shift = !!(event.modifiers & Qt.ShiftModifier)
+    if (key === Qt.Key_Space) return " "
+    if (key >= Qt.Key_A && key <= Qt.Key_Z)
+      return shift ? String.fromCharCode(key) : String.fromCharCode(key + 32)
+    if (key >= 32 && key <= 255 && key !== 127) {
+      var ch = String.fromCharCode(key)
+      return shift ? ch : ch.toLowerCase()
+    }
+    return ""
+  }
+
+  function handleKey(event) {
+    if (root.saving) {
+      event.accepted = true
+      return
+    }
+    if (event.key === Qt.Key_Escape) {
+      root.dismiss()
+      event.accepted = true
+      return
+    }
+    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+      root.save()
+      event.accepted = true
+      return
+    }
+    if (event.modifiers & (Qt.AltModifier | Qt.MetaModifier)) {
+      event.accepted = false
+      return
+    }
+    if (event.key === Qt.Key_U && event.modifiers === Qt.ControlModifier) {
+      input.clear()
+      root.errorText = ""
+      event.accepted = true
+      return
+    }
+    if (Util.editsFilter(event, input.text)) {
+      input.text = Util.editedFilter(event, input.text)
+      event.accepted = true
+      return
+    }
+    var chunk = root.textFromEvent(event)
+    if (chunk) {
+      var next = input.text + chunk
+      if (next.length > Model.maximumLength)
+        next = next.slice(0, Model.maximumLength)
+      input.text = next
+      event.accepted = true
+      return
+    }
+    event.accepted = false
   }
 
   Process {
@@ -109,12 +179,19 @@ Item {
     color: "transparent"
     WlrLayershell.namespace: "omajot"
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+    WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore
+    onBackingWindowVisibleChanged: if (backingWindowVisible && root.opened)
+      Qt.callLater(function() { if (root.opened) input.forceActiveFocus() })
 
     Rectangle {
       anchors.fill: parent
       color: root.menuColors.scrim
+    }
+
+    MouseArea {
+      anchors.fill: parent
+      onClicked: root.dismiss()
     }
 
     BorderSurface {
@@ -127,6 +204,19 @@ Item {
       borderSpec: Border.surfaceSpec("menu", "border", root.menuColors.border, Math.max(1, Style.space(2)))
       padding: root.spacingTokens.panelPadding
 
+      MouseArea { anchors.fill: parent; onClicked: input.forceActiveFocus() }
+
+      Item {
+        id: input
+        anchors.fill: parent
+        property string text: ""
+        property bool inputMethodComposing: false
+        function clear() { text = "" }
+        focus: true
+        Keys.priority: Keys.BeforeItem
+        Keys.onPressed: function(event) { root.handleKey(event) }
+      }
+
       Column {
         id: content
         anchors.left: parent.left
@@ -137,36 +227,47 @@ Item {
         anchors.rightMargin: card.contentRightInset
         spacing: root.spacingTokens.sm
 
-        TextField {
-          id: input
+        Item {
           width: content.width
-          padding: 0
-          topPadding: root.spacingTokens.controlPaddingY
-          bottomPadding: root.spacingTokens.controlPaddingY
-          background: null
-          focus: true
-          readOnly: root.saving
-          maximumLength: Model.maximumLength
-          placeholderText: "jot ▸"
-          placeholderTextColor: Color.muted
-          color: root.menuColors.text
-          selectionColor: root.menuColors.selectedBackground
-          selectedTextColor: root.menuColors.selectedText
-          font.family: root.fontTokens.menuFamily
-          font.pixelSize: root.fontTokens.heading
-          onAccepted: root.save()
-          Keys.onEscapePressed: event => {
-            root.dismiss()
-            event.accepted = true
+          height: fieldText.implicitHeight + root.spacingTokens.controlPaddingY * 2
+
+          Text {
+            anchors.fill: parent
+            verticalAlignment: Text.AlignVCenter
+            visible: input.text.length === 0
+            text: "jot ▸"
+            textFormat: Text.PlainText
+            color: Color.muted
+            font.family: root.fontTokens.menuFamily
+            font.pixelSize: root.fontTokens.heading
           }
-          Keys.onPressed: event => {
-            if (event.key === Qt.Key_U && event.modifiers === Qt.ControlModifier) {
-              if (!root.saving) {
-                input.clear()
-                root.errorText = ""
-              }
-              event.accepted = true
-            }
+
+          Text {
+            id: fieldText
+            anchors.fill: parent
+            verticalAlignment: Text.AlignVCenter
+            visible: input.text.length > 0
+            text: input.text
+            textFormat: Text.PlainText
+            elide: Text.ElideRight
+            color: root.menuColors.text
+            font.family: root.fontTokens.menuFamily
+            font.pixelSize: root.fontTokens.heading
+          }
+
+          Rectangle {
+            visible: root.opened && input.text.length > 0
+            width: Math.max(1, Style.space(2))
+            height: fieldText.font.pixelSize
+            anchors.verticalCenter: parent.verticalCenter
+            x: Math.min(fieldMetrics.width, parent.width - width)
+            color: root.menuColors.text
+          }
+
+          TextMetrics {
+            id: fieldMetrics
+            font: fieldText.font
+            text: input.text
           }
         }
 

@@ -111,30 +111,61 @@ die installierte Preview wurde in diesem Abschnitt nicht ersetzt.
 
 ## 4. Integration
 
-- [ ] Finale Version lokal nach `~/.config/omarchy/plugins/<id>/` kopieren (kein Symlink; Preview bereits installiert)
-- [ ] `omarchy plugin validate`
-- [ ] `omarchy plugin enable <id>`
-- [ ] Binding in `~/.config/hypr/bindings.lua` (Label: Omajot)
-- [ ] Summon/Hide/Toggle per CLI:
+- [x] Finale Version lokal nach `~/.config/omarchy/plugins/<id>/` kopieren (kein Symlink; Preview bereits installiert)
+- [x] `omarchy plugin validate`
+- [x] `omarchy plugin enable <id>`
+- [x] Binding in `~/.config/hypr/bindings.lua` (Label: Omajot)
+- [x] Summon/Hide/Toggle per CLI:
 
 ```bash
 omarchy-shell shell toggle io.github.phausser.omajot
 ```
 
+Lokal integriert am 2026-09-10: Laufzeitdateien in die bestehende Plugin-Kopie
+übertragen, validiert, neu eingelesen und aktiviert. `Super + N` erneut als
+frei geprüft und mit Label Omajot eingerichtet; Hyprland-Reload ohne
+Konfigurationsfehler. Summon/Hide und beide Toggle-Richtungen über IPC
+mit vorhandenem bzw. entferntem `omajot`-Layer bestätigt.
+Backup: `~/.config/omarchy/backups/omajot-20260910-173115/`.
+Tatsächliche Tastatureingabe, Darstellung und Fokus bleiben in Abschnitt 5
+zu prüfen; bei diesen IPC-Checks wurden keine Notizen geschrieben.
+
 ## 5. Qualität
 
-- [ ] GitHub-Checks für Plugin-Validierung, Modell-/Dateitests und QML-Lint sind grün
-- [ ] Fokus-Rückgabe und Hotkeys in der echten Omarchy-Sitzung prüfen
+- [x] GitHub-Checks für Plugin-Validierung, Modell-/Dateitests und QML-Lint sind grün
+- [x] Fokus-Rückgabe und Hotkeys in der echten Omarchy-Sitzung prüfen
 - [ ] IME und Compose in der echten Omarchy-Sitzung prüfen
-- [ ] Theme wechseln, Overlay muss mitfärben
+- [x] Theme wechseln, Overlay muss mitfärben
 - [ ] Umlaut, Emoji, CJK in der Zeile
-- [ ] `~/omajot.md` fehlt → Datei wird angelegt, kein Ordner
-- [ ] Datei read-only → Fehlermeldung, kein Close
-- [ ] Enter auf leerem Feld → Close, keine Leerzeile
-- [ ] Zwei schnelle Toggles, kein Doppel-Write
-- [ ] `plugin disable` / `enable` / Shell-Restart
-- [ ] `plugin remove` löscht nicht `~/omajot.md`
-- [ ] `qmllint -I "$OMARCHY_PATH/shell" Overlay.qml`
+- [x] `~/omajot.md` fehlt → Datei wird angelegt, kein Ordner
+- [x] Datei read-only → Fehlermeldung, kein Close
+- [x] Enter auf leerem Feld → Close, keine Leerzeile
+- [x] Zwei schnelle Toggles, kein Doppel-Write
+- [x] `plugin disable` / `enable` / Shell-Restart
+- [x] `plugin remove` löscht nicht `~/omajot.md`
+- [x] QML-Lint mit Shell-Imports via `bash scripts/lint-qml.sh` (ergänzt den virtuellen `qs`-Importbaum)
+
+Prüfstand 2026-09-10: [GitHub-Lauf 34496900835](https://github.com/phausser/omajot/actions/runs/34496900835)
+für `a2574fc` vollständig erfolgreich: Plugin-Validierung, Modell-/Datei-/
+Controller-Tests und QML-Lint. Lokaler QML-Lint ebenfalls ohne Warnungen.
+
+Sitzung 2026-09-10, Fortsetzung: `Super + N` öffnet und schließt den `omajot`-Layer.
+Escape und erfolgreiches Enter geben den Fokus an dasselbe VS-Code-Fenster
+zurück. Ctrl+U leert auf den Placeholder. Leeres Enter schließt ohne Write.
+Zwei schnelle Toggles schreiben nicht. Nach `omarchy restart shell` bleiben
+Summon/Hide nutzbar; `plugin remove --yes` löscht `~/omajot.md` nicht, Plugin
+danach aus Backup wieder aktiviert.
+
+Datei: fehlende `~/omajot.md` wird als Datei angelegt, kein `~/Notes`.
+Read-only: Overlay bleibt, Status `couldn't write ~/omajot.md`, Entwurf bleibt.
+Theme: Overlay folgt `Tokyo Night` (dunkle Karte) und wieder `Catppuccin Latte`.
+
+Ein schnelles Enter hat dieselbe Zeile zweimal angehängt, weil die Schreibsperre
+vor `dismiss` fiel. Erfolgspfad räumt den Entwurf jetzt vor dem Freigeben der
+Sperre ab; danach genau eine Zeile. Deutsche Umlaute äöü kommen über den
+Keysym-Fallback. Dead-Acute+a ergibt nur `a`, nicht `á`. Emoji/CJK brauchen
+IME/`event.text` und sind mit dem Key-Catcher noch nicht in der Sitzung
+nachgewiesen. Offen: IME/Compose und Emoji/CJK.
 
 ## 6. Docs zum Shippen
 
