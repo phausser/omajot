@@ -1,29 +1,34 @@
 # Omajot
 
-A quick-note overlay for Omarchy: one shortcut, one line, Enter.
-Appends timestamped plain-text notes to `~/omajot.md`.
+A quick-note overlay for Omarchy, designed to append timestamped notes to
+`~/omajot.md`. Currently a preview: opening and closing work; saving comes next.
 
 ## Installation
 
-Under development; not yet installable. The plugin will run unsandboxed
-inside `omarchy-shell`.
+Requires Omarchy with shell plugin support. From this repository:
+
+```bash
+omarchy plugin validate .
+mkdir -p ~/.config/omarchy/plugins/io.github.phausser.omajot
+cp manifest.json Overlay.qml LICENSE README.md ~/.config/omarchy/plugins/io.github.phausser.omajot/
+omarchy-shell shell rescanPlugins
+```
+
+Review the code before enabling: the plugin runs unsandboxed inside `omarchy-shell`.
+
+```bash
+omarchy plugin enable io.github.phausser.omajot
+```
 
 ## Configuration
 
-The planned v1 uses `~/omajot.md` with local timestamps and no configuration file.
-Set the shortcut in your Hyprland bindings; `Super + N` is recommended if free.
+No settings yet. The planned v1 writes to `~/omajot.md` using local timestamps.
+A `Super + N` binding is planned; no shortcut is installed automatically.
 
 ## Usage
 
-Planned controls:
-
-- **Super + N:** open the overlay or dismiss it without saving.
-- **Enter:** save and close; empty input closes without saving.
-- **Escape:** discard and close.
-- **Ctrl + U:** clear the input.
-
-Notes will use this format:
-
-```text
-2026-09-10 15:01  add an index on users.email tomorrow
+```bash
+omarchy-shell shell toggle io.github.phausser.omajot
 ```
+
+Press **Escape** or run the command again to close the preview.

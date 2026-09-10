@@ -18,18 +18,31 @@ Setup geprüft am 2026-09-10: `Super + N` ist laut aktiven Hyprland-Bindings fre
 Der vorgesehene Fallback `Super + Shift + N` ist mit „Editor“ belegt und daher
 kein freier Ersatz. Bestehender Repo-Ordner: `/home/pat/Code/omajot`, keine Symlinks.
 Referenz: `/usr/share/omarchy/shell/plugins/emojis/{manifest.json,Emojis.qml}`;
-Details und Hinweise für die Umsetzung stehen im README.
+Wesentliche Hinweise für die Umsetzung stehen in AGENTS.md.
 
 ## 1. Vertrag
 
-- [ ] `manifest.json`: id `io.github.phausser.omajot`, name `Omajot`
-- [ ] `schemaVersion`, version, author, license, description
-- [ ] description erwähnt `~/omajot.md`
-- [ ] `kinds: ["overlay"]`
-- [ ] `entryPoints.overlay` → `Overlay.qml`
-- [ ] `omarchy plugin validate .` ohne Fehler
-- [ ] GitHub-Actions-Pipeline für Pull Requests und Pushes anlegen; Plugin-Validierung ausführen, sobald Manifest und Overlay vorhanden sind
-- [ ] Dependabot für `github-actions` mit wöchentlichem Update-Intervall einrichten
+- [x] `manifest.json`: id `io.github.phausser.omajot`, name `Omajot`
+- [x] `schemaVersion`, version, author, license, description
+- [x] description erwähnt `~/omajot.md`
+- [x] `kinds: ["overlay"]`
+- [x] `entryPoints.overlay` → `Overlay.qml`
+- [x] `omarchy plugin validate .` ohne Fehler
+- [x] GitHub-Actions-Pipeline für Pull Requests und Pushes anlegen; Plugin-Validierung ausführen, sobald Manifest und Overlay vorhanden sind
+- [x] Dependabot für `github-actions` mit wöchentlichem Update-Intervall einrichten
+
+- [x] Minimal-Overlay für den vorgezogenen lokalen Testaufruf erstellen, kopieren und aktivieren
+- [x] Summon/Hide/Toggle gegen die laufende Shell prüfen
+
+Validiert am 2026-09-10: installierter Validator und offizieller CI-Validator
+(`basecamp/omarchy@8ea51516390320f8e768808b230098e67bdaa82c`) erfolgreich.
+Preview als `omajot`-Layer im bestehenden Shell-Prozess auf dem fokussierten
+Monitor nachgewiesen; Hide und beide Toggle-Richtungen geprüft.
+GitHub-Workflow und Dependabot-Konfiguration angelegt, YAML geparst und den
+CI-Validierungsbefehl lokal ausgeführt; GitHub-Lauf steht bis zum Push aus.
+Der direkte qmllint-Aufruf löst die virtuellen `qs`-Imports noch nicht auf;
+die vollständige Lint-Einrichtung folgt in Abschnitt 3. Escape ist implementiert,
+aber noch nicht per Tastatureingabe geprüft. Noch keine Eingabe oder Persistenz.
 
 ## 2. Modell
 
@@ -48,9 +61,9 @@ Details und Hinweise für die Umsetzung stehen im README.
 
 ## 3. Overlay-UI
 
-- [ ] `Overlay.qml` als Entry
-- [ ] `moduleName` = Plugin-id
-- [ ] `open` / `close` / `toggle` für Shell-IPC
+- [x] `Overlay.qml` als Entry (Preview aus Abschnitt 1)
+- [x] `moduleName` = Plugin-id
+- [x] `open` / `close` / `toggle` für Shell-IPC
 - [ ] Ein `TextField`/`TextInput`, Fokus beim Öffnen (`Qt.callLater`)
 - [ ] Placeholder `jot ▸`
 - [ ] Maße: ~600 px breit, eine Zeile
@@ -63,7 +76,7 @@ Details und Hinweise für die Umsetzung stehen im README.
 
 ## 4. Integration
 
-- [ ] Lokal nach `~/.config/omarchy/plugins/<id>/` kopieren (kein Symlink)
+- [ ] Finale Version lokal nach `~/.config/omarchy/plugins/<id>/` kopieren (kein Symlink; Preview bereits installiert)
 - [ ] `omarchy plugin validate`
 - [ ] `omarchy plugin enable <id>`
 - [ ] Binding in `~/.config/hypr/bindings.lua` (Label: Omajot)

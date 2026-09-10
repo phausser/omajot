@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.phausser.omajot",
+  "name": "Omajot",
+  "version": "0.1.0",
+  "author": "Patrick Hausser",
+  "license": "MIT",
+  "description": "Quick notes appended to ~/omajot.md.",
+  "kinds": ["overlay"],
+  "entryPoints": {
+    "overlay": "Overlay.qml"
+  }
+}
