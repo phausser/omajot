@@ -8,6 +8,29 @@ permissions:
   contents: read
 
 jobs:
+  qml:
+    name: Lint QML
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    timeout-minutes: 10
+    steps:
+      - name: Install Qt and Quickshell imports
+        run: pacman -Syu --noconfirm --needed git qt6-declarative quickshell
+      - name: Check out plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: plugin
+          persist-credentials: false
+      - name: Check out Omarchy QML imports
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: basecamp/omarchy
+          ref: 8ea51516390320f8e768808b230098e67bdaa82c
+          path: omarchy
+          persist-credentials: false
+          sparse-checkout: shell
+      - name: Lint overlay with host imports
+        run: OMARCHY_PATH="$GITHUB_WORKSPACE/omarchy" bash plugin/scripts/lint-qml.sh
   model:
     name: Test model and files
     runs-on: ubuntu-latest

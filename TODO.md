@@ -57,11 +57,12 @@ aber noch nicht per Tastatureingabe geprüft. Noch keine Eingabe oder Persistenz
 - [x] Fehler als String zurück (asynchroner Callback)
 - [x] Modelltests für Trim, leere Eingaben, lokales Zeitformat, Unicode und 4000-Zeichen-Grenze
 - [x] Dateitests mit temporären Dateien: Anlegen, Append ohne Überschreiben und Schreibfehler
-- [ ] Modell- und Dateitests in der GitHub-Actions-Pipeline ausführen
+- [x] Modell- und Dateitests in der GitHub-Actions-Pipeline ausführen
 
 Stand 2026-09-10: Modell- und Dateitests lokal mit `TZ=Europe/Berlin` und
 `TZ=America/New_York` erfolgreich; Plugin-Validierung und `git diff --check`
-erfolgreich. Beide Tests im Workflow ergänzt, tatsächlicher GitHub-Lauf noch offen.
+erfolgreich. GitHub-Lauf [34492920398](https://github.com/phausser/omajot/actions/runs/34492920398)
+für `a121b15` bestätigt Modell-/Dateitests und Plugin-Validierung erfolgreich.
 Zeilenumbrüche werden zu Leerzeichen; das Limit zählt passend zu QML
 UTF-16-Einheiten und trennt keine Surrogatpaare.
 Nutzerentscheidung: lokaler Append-Hilfsprozess mit asynchroner Rückmeldung
@@ -72,22 +73,41 @@ und Pfad als Argumente und öffnet ausschließlich mit Append.
 Dateitests prüfen zusätzlich Literalübergabe, Prozessfehler und eine durch
 Dateigrößenlimit erzwungene Schreibstörung (kein echter voller Datenträger).
 Die QML-Process-Anbindung einschließlich Startfehlerbehandlung und Sperre
-gegen parallele Writes sowie Erhalt der Eingabe folgt mit der UI in Abschnitt 3.
+gegen parallele Writes sowie Erhalt der Eingabe ist in Abschnitt 3 umgesetzt.
 
 ## 3. Overlay-UI
 
 - [x] `Overlay.qml` als Entry (Preview aus Abschnitt 1)
 - [x] `moduleName` = Plugin-id
 - [x] `open` / `close` / `toggle` für Shell-IPC
-- [ ] Ein `TextField`/`TextInput`, Fokus beim Öffnen (`Qt.callLater`)
-- [ ] Placeholder `jot ▸`
-- [ ] Maße: ~600 px breit, eine Zeile
-- [ ] Farben/Fonts über `qs.Ui` / `Style`, kein Hardcode-Hex
-- [ ] Enter → model.append → bei Erfolg close
-- [ ] Escape → close ohne Write
-- [ ] Ctrl+U → Feld leeren
-- [ ] Write-Fehler: Statuszeile (`couldn't write ~/omajot.md`), Overlay bleibt
-- [ ] `qmllint` in der CI einrichten, mit passenden Qt-, Quickshell- und Omarchy-Imports
+- [x] Ein `TextField`/`TextInput`, Fokus beim Öffnen (`Qt.callLater`)
+- [x] Placeholder `jot ▸`
+- [x] Maße: ~600 px breit, eine Zeile
+- [x] Farben/Fonts über `qs.Ui` / `Style`, kein Hardcode-Hex
+- [x] Enter → model.append → bei Erfolg close
+- [x] Escape → close ohne Write
+- [x] Ctrl+U → Feld leeren
+- [x] Write-Fehler: Statuszeile (`couldn't write ~/omajot.md`), Overlay bleibt
+- [x] `qmllint` in der CI einrichten, mit passenden Qt-, Quickshell- und Omarchy-Imports
+
+Implementiert am 2026-09-10. Während eines Writes ist das Feld schreibgeschützt;
+weiteres Enter startet keinen Prozess. Schließen nach bereits ausgelöstem Enter
+macht den Write nicht rückgängig: Der Entwurf bleibt intern bis zum Ergebnis
+erhalten; bei Fehler wird das Overlay samt Host-Zustand wieder geöffnet.
+Ohne laufenden Write verwerfen Escape/Toggle wie vorgesehen.
+
+Lokal bestanden: 19 Modell-, Datei- und Controller-Tests in zwei Zeitzonen,
+Plugin-Validierung, `git diff --check` und `bash scripts/lint-qml.sh` mit null
+Warnungen (Qt 6.11.2, Quickshell 0.3.1). Der Linter erhält eine temporäre Kopie
+des Shell-Modulbaums als `qs`; keine Symlinks im Plugin. Zwei lokal begrenzte
+Lint-Ausnahmen betreffen Quickshell-Metadaten (PanelWindow-Erzeugung und
+QProcess::ExitStatus), keine global deaktivierten Warnungen.
+CI verwendet Qt/Quickshell aus Arch und den festgelegten Omarchy-Commit;
+der neue QML-Job wurde noch nicht auf GitHub ausgeführt.
+Controller-Tests prüfen die tatsächlichen JS-Funktionen aus Overlay.qml mit
+simuliertem Host/Prozess. QML-Signale, Tastatureingaben, Fokus, IME/Compose,
+Theme und Darstellung sind noch nicht in der echten Sitzung geprüft;
+die installierte Preview wurde in diesem Abschnitt nicht ersetzt.
 
 ## 4. Integration
 
