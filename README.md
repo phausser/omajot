@@ -5,7 +5,7 @@ One key, one line, appended to `~/omajot.md`.
 Plugin id: `io.github.phausser.omajot`. Overlay for [Omarchy](https://omarchy.org/).
 
 The plugin runs **unsandboxed** inside the existing `omarchy-shell` process. It
-appends plaintext to `~/omajot.md` in your home directory. Read the code before
+appends plaintext to the configured file (default `~/omajot.md`). Read the code before
 enabling. Removing the plugin does **not** delete `~/omajot.md`.
 
 ## Install
@@ -59,6 +59,25 @@ that file alone; Omajot never creates `~/Notes`.
 
 On write failure the overlay stays open with `couldn't write ~/omajot.md` and
 keeps the draft.
+
+## Configuration
+
+Optionally create `~/.config/omajot.json`:
+
+```json
+{
+  "path": "~/inbox.md"
+}
+```
+
+Without this file or its `path` entry, Omajot uses `~/omajot.md`. Use an
+absolute path or `~/…`; environment variables and `~user` are not expanded.
+The parent directory must already exist. Omajot creates only the note file,
+never directories. Configuration changes are reloaded automatically.
+
+Invalid or unreadable configuration blocks saving and preserves your draft.
+Write errors show the configured path. Removing the plugin preserves your
+configured note file too.
 
 ## Input
 

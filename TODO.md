@@ -201,7 +201,36 @@ in Hyprland, nicht im Plugin; `Super + Shift + N` als Editor-Belegung genannt.
 Remove-Hinweis: `~/omajot.md` bleibt. SPEC.md liegt im Repo. v1-Grenze zu
 IME/Compose/CJK steht unter Input.
 
-## 7. Release
+## 7. v1-Erweiterungen
+
+Umfangsentscheidung 2026-09-12: Die folgenden drei Funktionen gehören verbindlich
+zu v1 und werden vor dem Release umgesetzt. Bestehende Prüfbefunde oben beziehen
+sich auf den bisherigen Funktionsumfang.
+
+- [x] Config-Pfad statt Hardcode: Host-Vertrag prüfen, Einstellung lesen, Default `~/omajot.md`, `~` auflösen; keine Verzeichnisse anlegen
+- [ ] Pfeil-hoch lädt den letzten gespeicherten Text aus der konfigurierten Datei ohne Zeitstempel; Enter hängt eine neue Zeile an, bestehender Inhalt bleibt erhalten
+- [ ] Hotkey öffnet die konfigurierte Datei (Default `~/omajot.md`) im Standard-Editor; freie Belegung prüfen, `Super + Shift + N` nicht überschreiben
+- [ ] Modell-/Datei-/Controller-Tests für Pfad-Konfiguration und letzte Zeile ergänzen; fehlende/leere Datei und Lesefehler behandeln, Eingabe bei Fehler erhalten
+- [ ] Plugin-Validierung, Modell-/Datei-/Controller-Tests und QML-Lint ausführen
+- [ ] Erweiterungen lokal integrieren und Pfeil-hoch sowie Editor-Hotkey in der echten Sitzung prüfen
+- [ ] README um Konfiguration, Pfeil-hoch und Editor-Hotkey ergänzen
+
+Pfad-Konfiguration implementiert am 2026-09-12: `~/.config/omajot.json`,
+Eintrag `path`, Default `~/omajot.md`. Der installierte Host injiziert in
+Overlay-Loader keine `settings`; `PluginShellApi.qml` bietet keinen eigenen
+Konfigurationsleser. Deshalb separate JSON-Datei über FileView, mit Reload.
+Ungültige/unlesbare Konfiguration blockiert Writes; fehlende Konfiguration
+nutzt den Default. Absolute Pfade und `~` werden im Modell aufgelöst.
+README enthält die Konfiguration. Keine Verzeichnisse werden angelegt.
+
+Lokal bestanden: Modell-/Datei-/Controller-Tests in Europe/Berlin und
+America/New_York, Plugin-Validierung, QML-Lint und `git diff --check`.
+Neue Tests prüfen Pfade, ungültige Konfiguration, Erhalt des Entwurfs und
+Append an temporäre konfigurierte Dateien. Konfigurations-Reload und
+FileView-Signale sind noch nicht in der echten Sitzung geprüft; die lokale
+Plugin-Kopie wurde nicht aktualisiert. Die übrigen Erweiterungen bleiben offen.
+
+## 8. Release
 
 - [ ] Öffentliches Git-Repo (Name: `omajot`)
 - [ ] Keine lokalen Secrets, keine `clonedFrom`-Reste
@@ -212,13 +241,10 @@ IME/Compose/CJK steht unter Input.
 
 ## Parkplatz v2 (nicht anfassen)
 
-- Pfeil-hoch lädt letzte Zeile
-- Hotkey öffnet `~/omajot.md` im Editor
-- Config-Pfad statt Hardcode
 - Neovim `--server` Append
 - `Alt+Enter` Mehrzeiler
 - Bar-Badge
 
 ## Definition of done (v1)
 
-Eine Taste öffnet Omajot. Eine Zeile landet in `~/omajot.md`. Escape schreibt nichts. Kein `~/Notes`. Validate ist grün.
+Eine Taste öffnet Omajot. Eine Zeile landet im konfigurierten Pfad (Default `~/omajot.md`). Pfeil-hoch lädt den letzten gespeicherten Text; ein separater Hotkey öffnet dieselbe Datei im Editor. Escape schreibt nichts. Kein `~/Notes`. Validate ist grün.

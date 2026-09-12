@@ -14,7 +14,7 @@ function overlay() {
     clear() { this.text = ''; this.cursorPosition = 0; },
     forceActiveFocus() {}
   };
-  const root = { opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
+  const root = { configReady: true, configError: '', notePath: '~/omajot.md', opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
   const writer = { running: false, command: [] };
   const model = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../OmajotModel.js'), 'utf8'), model);
@@ -244,4 +244,32 @@ test('Enter during composition does not submit', () => {
   assert.equal(enter.accepted, false);
   assert.equal(ui.writer.running, false);
   assert.equal(ui.root.opened, true);
+});
+
+test('configured path reaches writer; invalid config preserves draft', () => {
+  const ui = overlay();
+  ui.root.loadConfig('{"path":"~/custom notes.md"}');
+  ui.open();
+  ui.root.save();
+  assert.equal(ui.writer.command[4], '/tmp/omajot-controller-test/custom notes.md');
+  ui.finish(1);
+  assert.equal(ui.root.errorText, "couldn't write ~/custom notes.md");
+  ui.root.loadConfig('{broken');
+  ui.root.save();
+  assert.equal(ui.writer.running, false);
+  assert.equal(ui.input.text, 'draft');
+  assert.equal(ui.root.opened, true);
+  assert.equal(ui.root.errorText, "couldn't read ~/.config/omajot.json");
+});
+
+test('pending config prevents writing, but empty Enter still closes', () => {
+  const ui = overlay();
+  ui.root.configReady = false;
+  ui.open();
+  ui.root.save();
+  assert.equal(ui.writer.running, false);
+  assert.equal(ui.input.text, 'draft');
+  ui.input.text = '   ';
+  ui.root.save();
+  assert.equal(ui.root.opened, false);
 });

@@ -2,10 +2,28 @@
 var maximumLength = 4000
 var writeError = "couldn't write ~/omajot.md"
 
-function resolvePath(home) {
-  if (typeof home !== "string" || home.charAt(0) !== "/")
+var defaultPath = "~/omajot.md"
+
+function parseConfig(text) {
+  var config = JSON.parse(text)
+  if (!config || typeof config !== "object" || Array.isArray(config))
+    throw new Error("invalid configuration")
+  var path = config.path === undefined ? defaultPath : config.path
+  if (typeof path !== "string" || !path || path.indexOf("\u0000") !== -1
+      || (path.charAt(0) !== "/" && path !== "~" && path.indexOf("~/") !== 0))
+    throw new Error("invalid path")
+  return path
+}
+
+function resolvePath(home, configuredPath) {
+  var path = configuredPath === undefined ? defaultPath : configuredPath
+  // Validate explicitly supplied values; never silently redirect a bad setting.
+  parseConfig(JSON.stringify({ path: path }))
+  if (path.charAt(0) === "/") return path
+  if (typeof home !== "string" || home.charAt(0) !== "/" || home.indexOf("\u0000") !== -1)
     throw new Error(writeError)
-  return home.replace(/\/+$/, "") + "/omajot.md"
+  var base = home.replace(/\/+$/, "")
+  return path === "~" ? (base || "/") : base + "/" + path.slice(2)
 }
 
 function normalizeText(text) {
@@ -36,8 +54,9 @@ function formatLine(text, now) {
 // run(command, finished) is supplied by the host's Process adapter.
 // finished(exitCode, exitStatus) uses QProcess conventions (0 = normal exit).
 // The adapter must also report startup failures, and serialize writes.
-// done(error) receives "" on success (including empty input), otherwise writeError.
-function append(text, home, run, done, now) {
+// done(error) receives "" on success (including empty input), otherwise a path-specific write error.
+function append(text, home, run, done, now, configuredPath) {
+  var failure = "couldn't write " + (configuredPath === undefined ? defaultPath : configuredPath)
   var completed = false
   function finish(error) {
     if (completed) return
@@ -52,7 +71,7 @@ function append(text, home, run, done, now) {
       finish("")
       return
     }
-    var path = resolvePath(home)
+    var path = resolvePath(home, configuredPath)
     // OS argument strings cannot carry NUL. Fail rather than silently truncate.
     if (line.indexOf("\u0000") !== -1 || path.indexOf("\u0000") !== -1)
       throw new Error(writeError)
@@ -60,15 +79,15 @@ function append(text, home, run, done, now) {
     // >> opens with O_APPEND and creates only the file if it is missing.
     command = ["/bin/sh", "-c", 'printf "%s" "$2" >> "$1"', "omajot", path, line]
   } catch (error) {
-    finish(writeError)
+    finish(failure)
     return
   }
 
   try {
     run(command, function(exitCode, exitStatus) {
-      finish(exitCode === 0 && exitStatus === 0 ? "" : writeError)
+      finish(exitCode === 0 && exitStatus === 0 ? "" : failure)
     })
   } catch (error) {
-    finish(writeError)
+    finish(failure)
   }
 }

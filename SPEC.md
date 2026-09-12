@@ -38,19 +38,19 @@ Heute landet das in der Clipboard-History, in zufälligen Kommentaren oder nirge
 
 ## 4. Nutzerfluss
 
-1. `Super + N` (falls belegt: `Super + Shift + N`) öffnet ein schmales Overlay über dem fokussierten Monitor.
+1. `Super + N` (falls belegt: eine zuvor geprüfte freie Alternative) öffnet ein schmales Overlay über dem fokussierten Monitor.
 2. Ein Textfeld hat sofort den Fokus. Placeholder: `jot ▸`
 3. Tippen.
-4. `Enter` hängt die Zeile an `~/omajot.md` an und schließt das Overlay.
+4. `Enter` hängt die Zeile an den konfigurierten Pfad (Default: `~/omajot.md`) an und schließt das Overlay.
 5. Fokus kehrt zum vorherigen Fenster zurück.
 6. `Escape` verwirft und schließt, nichts wird geschrieben.
 7. Leere Zeile + `Enter` ist ein No-op (schließen ohne Write).
 8. `Super + N` bei offenem Overlay schließt ohne Write (Toggle).
 
-Später, nicht v1-pflichtig:
+Weitere v1-Funktionen:
 
-- Pfeil-hoch lädt die zuletzt gespeicherte Zeile zum Korrigieren.
-- `Super + Shift + N` öffnet `~/omajot.md` im Standard-Editor.
+- Pfeil-hoch lädt den Text der zuletzt gespeicherten Zeile aus der konfigurierten Datei ohne Zeitstempel zum Bearbeiten. Erneutes Enter hängt eine neue Zeile an; die bestehende Zeile bleibt erhalten.
+- Ein separater Hotkey öffnet die konfigurierte Datei (Default: `~/omajot.md`) im Standard-Editor. Die konkrete freie Belegung vor Integration prüfen; `Super + Shift + N` ist bereits mit „Editor“ belegt.
 
 ## 5. Persistenz
 
@@ -60,7 +60,7 @@ Default-Senke: **eine Datei im Home**, kein extra Ordner.
 ~/omajot.md
 ```
 
-Keine Anlage von `~/Notes` oder `~/.local/share/omajot/`. Home existiert bereits. Fehlt die Datei, wird nur `omajot.md` erzeugt.
+Keine Anlage von `~/Notes` oder `~/.local/share/omajot/`. Fehlt die Zieldatei, wird nur diese Datei erzeugt. Das Elternverzeichnis muss existieren; es werden keine Verzeichnisse angelegt.
 
 Jede gespeicherte Zeile:
 
@@ -77,16 +77,18 @@ Format:
 - UTF-8
 - Append only, keine Rewrite der Datei
 
-Konfiguration (optional, v1 darf hardcoden und später lesen):
+Pfad-Konfiguration ist in v1 verpflichtend; ohne Einstellung gilt der Default.
+Konfiguration in `~/.config/omajot.json` (optional anzulegen):
 
 ```json
 {
-  "path": "~/omajot.md",
-  "timestamp": true
+  "path": "~/omajot.md"
 }
 ```
 
-Pfad-Expansion: `~` → Home.
+Die installierte Shell übergibt Overlays keine eigenen Einstellungen aus `shell.json`; daher liest das Overlay diese separate JSON-Datei. Fehlende Datei oder fehlender `path`-Eintrag verwendet den Default. Ungültige oder unlesbare Konfiguration verhindert Writes und erhält die Eingabe. Änderungen werden automatisch neu geladen.
+
+Erlaubt sind absolute Pfade und `~/…`; keine Expansion von Umgebungsvariablen oder `~user`. Pfad-Expansion: `~` → Home. Schreiben, Laden der letzten Zeile und Öffnen im Editor verwenden denselben konfigurierten Pfad. Zeitstempel bleiben in v1 verpflichtend.
 
 Keine Secrets-Erkennung in v1. Die Datei ist Klartext.
 
@@ -107,6 +109,7 @@ Tasten im Overlay:
 | Enter | Speichern + schließen |
 | Escape | Verwerfen + schließen |
 | Ctrl+U | Zeile leeren |
+| Pfeil-hoch | Letzten gespeicherten Text ohne Zeitstempel laden |
 
 IME / Compose müssen funktionieren (normales QML `TextField` / `TextInput`).
 
@@ -166,7 +169,7 @@ omajot/
 Verantwortlichkeiten:
 
 - `Overlay.qml` — Darstellung, Fokus, Tasten, open/close.
-- `OmajotModel.js` — `~/omajot.md` auflösen, Datei anlegen falls nötig, Zeile formatieren, append, Fehlertext zurückgeben.
+- `OmajotModel.js` — konfigurierten Pfad auflösen (Default `~/omajot.md`), letzte Zeile laden, Datei anlegen falls nötig, Zeile formatieren, append, Fehlertext zurückgeben.
 - Kein zweiter Quickshell-Prozess.
 - Kein Netzwerk.
 - Kein sudo.
@@ -178,13 +181,14 @@ Erfolg oder Fehler asynchron zurück (Nutzerentscheidung vom 2026-09-10).
 Kein weiterer Quickshell-Prozess. Das Overlay schließt erst nach bestätigtem
 Erfolg; während eines Writes keine weiteren Schreibstarts zulassen.
 Bei Write-Fehler Overlay offen lassen und eine Statuszeile zeigen
-(`couldn't write ~/omajot.md`).
+(`couldn't write <Pfad>`, beim Default `couldn't write ~/omajot.md`).
 
 ## 9. Fehlerfälle
 
 | Fall | Verhalten |
 |---|---|
-| `~/omajot.md` fehlt | Datei anlegen |
+| Zieldatei fehlt | Nur Datei anlegen; beim Laden der letzten Zeile kein Write |
+| Elternverzeichnis fehlt | Schreibfehler, kein Verzeichnis anlegen |
 | Datei nicht schreibbar | Fehlermeldung, Overlay bleibt |
 | Disk voll | Fehlermeldung, Overlay bleibt |
 | Pfad zeigt auf Verzeichnis | Fehlermeldung |
@@ -196,7 +200,7 @@ Keine stillen Verluste: Enter ohne erfolgreichen Write schließt nicht.
 
 - Plugin läuft unsandboxed im `omarchy-shell`.
 - Schreibt nur `~/omajot.md` (bzw. den konfigurierten Pfad).
-- Liest keine fremden Dateien.
+- Liest für Pfeil-hoch nur die konfigurierte Notizdatei; keine fremden Dateien.
 - Rendert die Eingabe als Plaintext, nicht als Rich-Text/HTML.
 - README muss den Schreibpfad `~/omajot.md` und den Unsandbox-Hinweis enthalten.
 
@@ -213,17 +217,16 @@ Omajot ist das Capture *bevor* Review in `~/omajot.md` oder in Neovim stattfinde
 
 - `omarchy plugin validate` ist grün.
 - Overlay öffnet in unter einer wahrnehmbaren Verzögerung nach dem Hotkey.
-- Enter schreibt genau eine formatierte Zeile nach `~/omajot.md` und gibt Fokus zurück.
+- Enter schreibt genau eine formatierte Zeile an den konfigurierten Pfad (Default `~/omajot.md`) und gibt Fokus zurück.
+- Pfeil-hoch lädt den zuletzt gespeicherten Text; erneutes Speichern erhält bestehende Zeilen.
+- Ein separater, auf freie Belegung geprüfter Hotkey öffnet dieselbe Datei im Editor.
+- Der Pfad ist konfigurierbar; ohne Einstellung wird `~/omajot.md` verwendet.
 - Escape schreibt nichts.
 - Theme-Wechsel färbt das Overlay mit.
 - Nach `plugin remove` bleibt `~/omajot.md` erhalten (Daten gehören dem User).
 
 ## 13. v2 (bewusst später)
 
-- Pfeil-hoch = letzte Zeile re-editieren
-- Hotkey „`~/omajot.md` im Editor öffnen“
 - Option Neovim-Server-Append
-- Config in `shell.json` / `omarchy bar set` falls der Host das für Overlays hergibt
 - optionales Bar-Widget nur als unsichtbarer Service-Zähler
 - Mehrzeiler via `Alt+Enter`
-- konfigurierbarer Pfad statt Hardcode

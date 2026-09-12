@@ -107,3 +107,16 @@ test('rejects NUL arguments before starting the helper', async () => {
   assert.equal(await append('/tmp/\0', 'note', runner), model.writeError);
   assert.equal(called, false);
 });
+
+test('custom path appends literally and missing parent is not created', async t => {
+  const home = temporaryHome(t);
+  const file = path.join(home, 'ä notes $HOME `id`.md');
+  const save = target => new Promise(resolve => model.append('next', home, run, resolve, date, target));
+  fs.writeFileSync(file, 'original\n');
+  assert.equal(await save(file), '');
+  assert.equal(fs.readFileSync(file, 'utf8'), 'original\n2026-09-10 15:01  next\n');
+  const missing = path.join(home, 'missing', 'notes.md');
+  assert.equal(await save(missing), "couldn't write " + missing);
+  assert.equal(fs.existsSync(path.dirname(missing)), false);
+  assert.deepEqual(fs.readdirSync(home), [path.basename(file)]);
+});

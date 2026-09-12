@@ -13,6 +13,9 @@ Item {
   property var shell: null
   property var manifest: null
   readonly property string moduleName: "io.github.phausser.omajot"
+  property string notePath: Model.defaultPath
+  property bool configReady: false
+  property string configError: ""
   property bool opened: false
   property bool saving: false
   property int pendingDead: 0
@@ -70,8 +73,26 @@ Item {
     if (finished) finished(exitCode, exitStatus)
   }
 
+  function loadConfig(text) {
+    root.configReady = true
+    try {
+      root.notePath = Model.parseConfig(text)
+      root.configError = ""
+    } catch (error) {
+      root.configError = "couldn't read ~/.config/omajot.json"
+    }
+  }
+
   function save() {
     if (root.saving || !root.opened || input.inputMethodComposing) return
+    if (Model.normalizeText(input.text) === "") {
+      root.dismiss()
+      return
+    }
+    if (!root.configReady || root.configError !== "") {
+      root.errorText = root.configError || "loading ~/.config/omajot.json"
+      return
+    }
     root.saving = true
     root.errorText = ""
     Model.append(input.text, Quickshell.env("HOME"), root.runWrite, function(error) {
@@ -89,7 +110,7 @@ Item {
           root.shell.summon(root.moduleName, "{}")
         root.open("{}")
       }
-    })
+    }, undefined, root.notePath)
   }
 
   function isDeadKey(key) {
@@ -240,6 +261,28 @@ Item {
       return
     }
     event.accepted = false
+  }
+
+  FileView {
+    id: configFile
+    path: Quickshell.env("HOME") + "/.config/omajot.json"
+    preload: true
+    printErrors: false
+    watchChanges: true
+    onFileChanged: {
+      root.configReady = false
+      reload()
+    }
+    onLoaded: root.loadConfig(text())
+    onLoadFailed: function(error) {
+      root.configReady = true
+      if (error === FileViewError.FileNotFound) {
+        root.notePath = Model.defaultPath
+        root.configError = ""
+      } else {
+        root.configError = "couldn't read ~/.config/omajot.json"
+      }
+    }
   }
 
   Process {
