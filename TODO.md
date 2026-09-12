@@ -273,10 +273,19 @@ Editor. Damit ist die Sitzungsprüfung der drei v1-Erweiterungen abgeschlossen.
 
 ## 8. Release
 
-- [ ] Öffentliches Git-Repo (Name: `omajot`)
-- [ ] Keine lokalen Secrets, keine `clonedFrom`-Reste
-- [ ] Tag `v0.1.0` = Manifest-version
+- [x] Öffentliches Git-Repo (Name: `omajot`)
+- [x] Keine lokalen Secrets, keine `clonedFrom`-Reste
+- [x] Tag `v0.1.0` = Manifest-version
 - [ ] Optional: Listing auf plugins.omarchy.org
+
+Release-Prüfung 2026-09-12: `phausser/omajot` ist öffentlich. Die versionierten
+Projektdateien wurden auf erkennbare Secrets und `clonedFrom`-Metadaten geprüft;
+keine Funde (kein Nachweis gegen jede denkbare Secret-Form). Plugin-Validierung
+und `git diff --check` erfolgreich. GitHub-Lauf
+[34715414539](https://github.com/phausser/omajot/actions/runs/34715414539)
+für `4057808` ist grün. Annotierter Tag `v0.1.0` zeigt auf diesen geprüften
+Code-Stand; Manifest-Version `0.1.0`. Der anschließende Dokumentationscommit
+aktualisiert nur diesen Prüfstand. Das optionale Listing bleibt offen.
 
 ---
 
