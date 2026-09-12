@@ -208,12 +208,12 @@ zu v1 und werden vor dem Release umgesetzt. Bestehende Prüfbefunde oben beziehe
 sich auf den bisherigen Funktionsumfang.
 
 - [x] Config-Pfad statt Hardcode: Host-Vertrag prüfen, Einstellung lesen, Default `~/omajot.md`, `~` auflösen; keine Verzeichnisse anlegen
-- [ ] Pfeil-hoch lädt den letzten gespeicherten Text aus der konfigurierten Datei ohne Zeitstempel; Enter hängt eine neue Zeile an, bestehender Inhalt bleibt erhalten
-- [ ] Hotkey öffnet die konfigurierte Datei (Default `~/omajot.md`) im Standard-Editor; freie Belegung prüfen, `Super + Shift + N` nicht überschreiben
-- [ ] Modell-/Datei-/Controller-Tests für Pfad-Konfiguration und letzte Zeile ergänzen; fehlende/leere Datei und Lesefehler behandeln, Eingabe bei Fehler erhalten
-- [ ] Plugin-Validierung, Modell-/Datei-/Controller-Tests und QML-Lint ausführen
+- [x] Pfeil-hoch lädt den letzten gespeicherten Text aus der konfigurierten Datei ohne Zeitstempel; Enter hängt eine neue Zeile an, bestehender Inhalt bleibt erhalten
+- [x] Hotkey öffnet die konfigurierte Datei (Default `~/omajot.md`) im Standard-Editor; freie Belegung prüfen, `Super + Shift + N` nicht überschreiben
+- [x] Modell-/Datei-/Controller-Tests für Pfad-Konfiguration und letzte Zeile ergänzen; fehlende/leere Datei und Lesefehler behandeln, Eingabe bei Fehler erhalten
+- [x] Plugin-Validierung, Modell-/Datei-/Controller-Tests und QML-Lint ausführen
 - [ ] Erweiterungen lokal integrieren und Pfeil-hoch sowie Editor-Hotkey in der echten Sitzung prüfen
-- [ ] README um Konfiguration, Pfeil-hoch und Editor-Hotkey ergänzen
+- [x] README um Konfiguration, Pfeil-hoch und Editor-Hotkey ergänzen
 
 Pfad-Konfiguration implementiert am 2026-09-12: `~/.config/omajot.json`,
 Eintrag `path`, Default `~/omajot.md`. Der installierte Host injiziert in
@@ -229,6 +229,32 @@ Neue Tests prüfen Pfade, ungültige Konfiguration, Erhalt des Entwurfs und
 Append an temporäre konfigurierte Dateien. Konfigurations-Reload und
 FileView-Signale sind noch nicht in der echten Sitzung geprüft; die lokale
 Plugin-Kopie wurde nicht aktualisiert. Die übrigen Erweiterungen bleiben offen.
+
+Pfeil-hoch implementiert am 2026-09-12: Ein asynchroner lokaler `tail`-Aufruf
+liest die letzte physische Zeile aus dem konfigurierten Pfad. Das Modell
+entfernt den Zeitstempel und begrenzt den Text auf 4000 UTF-16-Einheiten.
+Fehlende Datei/leere letzte Zeile erhält den Entwurf; Lesefehler zeigen den
+Pfad. Parallele Reads und Writes sind gesperrt, verspätete Ergebnisse nach
+Schließen, Eingabe- oder Konfigurationsänderung werden verworfen.
+README ergänzt. Modell-/Datei-/Controller-Tests in beiden Zeitzonen,
+Plugin-Validierung und QML-Lint lokal bestanden. Die QML-Prozesssignale und
+Pfeil-hoch sind noch in der echten Sitzung zu prüfen; keine lokale Installation.
+
+Editor-Hotkey implementiert und lokal eingerichtet am 2026-09-12:
+`Super + Alt + N` war laut aktiven Hyprland-Bindings frei. Das Binding ruft
+`summon` mit `{"action":"editor"}` auf; das Overlay wartet auf die Konfiguration
+und startet `omarchy launch editor` mit dem aufgelösten Pfad als eigenem Argument.
+Controller-Tests prüfen Pfadübergabe, wartende/ungültige Konfiguration und Abbruch.
+Alle lokalen Tests in beiden Zeitzonen, Plugin-Validierung und QML-Lint grün.
+
+Laufzeitdateien für alle drei Erweiterungen lokal installiert. Backup:
+`~/.config/omarchy/backups/omajot-20260912-105603/`.
+Hyprland-Reload ohne Konfigurationsfehler. Der Plugin-Reload verwendete offenbar
+noch alten Code; nach `omarchy restart shell` ist der Editor-Aufruf über IPC
+bestätigt: `nvim /home/pat/omajot.md`, kein Omajot-Layer mehr offen.
+Die temporäre Diagnose-Version wurde durch den Repo-Code ersetzt.
+Physischer Editor-Hotkey, Pfeil-hoch und Konfigurations-Reload in der echten
+Sitzung bleiben offen; deshalb bleibt der gemeinsame Integrationsprüfpunkt offen.
 
 ## 8. Release
 

@@ -91,3 +91,38 @@ function append(text, home, run, done, now, configuredPath) {
     finish(failure)
   }
 }
+
+function recalledText(line) {
+  // tail returns the final physical line, with or without its terminating LF.
+  var text = line.replace(/\r?\n$/, "")
+  text = text.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}  /, "")
+  return normalizeText(text)
+}
+
+// run also supplies collected UTF-8 stdout as its third callback argument.
+function readLast(home, configuredPath, run, done) {
+  var failure = "couldn't read " + (configuredPath === undefined ? defaultPath : configuredPath)
+  var completed = false
+  function finish(error, text) {
+    if (completed) return
+    completed = true
+    done(error, text)
+  }
+  try {
+    var path = resolvePath(home, configuredPath)
+    // Missing file is empty history. Directories and unreadable files are errors.
+    var command = ["/bin/sh", "-c",
+      'if [ ! -e "$1" ] && [ ! -L "$1" ]; then exit 0; fi; [ -f "$1" ] || exit 1; exec tail -n 1 -- "$1"',
+      "omajot", path]
+    run(command, function(code, status, output) {
+      if (code !== 0 || status !== 0) finish(failure, "")
+      else finish("", recalledText(output || ""))
+    })
+  } catch (error) {
+    finish(failure, "")
+  }
+}
+
+function editorCommand(home, configuredPath) {
+  return ["omarchy", "launch", "editor", resolvePath(home, configuredPath)]
+}

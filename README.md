@@ -35,6 +35,17 @@ o.bind("SUPER + N", "Omajot",
 `Super + Shift + N` is already bound to Editor on current Omarchy and is not
 a free substitute.
 
+To open the configured note file in Omarchy's default editor, add:
+
+```lua
+o.bind("SUPER + ALT + N", "Omajot im Editor",
+  [[omarchy-shell shell summon io.github.phausser.omajot '{"action":"editor"}']])
+```
+
+`Super + Alt + N` was free on the development machine on 2026-09-12; check
+bindings on your machine first. This uses the same configured path as capture.
+The editor opens independently, and the overlay closes without saving its draft.
+
 You can also toggle without a key:
 
 ```bash
@@ -47,6 +58,9 @@ omarchy-shell shell toggle io.github.phausser.omajot
 - **Escape** or **Super + N** again discards and closes. Nothing is written.
 - **Enter** on an empty (or whitespace-only) field closes without a write.
 - **Ctrl+U** clears the field.
+- **Up** loads the last line from the configured note file without its timestamp.
+  **Enter** appends the edited text as a new line; the original stays unchanged.
+  Empty or missing history leaves your draft unchanged. Read errors preserve it too.
 
 Each saved line looks like:
 

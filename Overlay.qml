@@ -16,8 +16,13 @@ Item {
   property string notePath: Model.defaultPath
   property bool configReady: false
   property string configError: ""
+  property bool editorPending: false
+  onConfigReadyChanged: if (configReady && editorPending) Qt.callLater(root.openEditor)
   property bool opened: false
   property bool saving: false
+  property bool recalling: false
+  property int recallGeneration: 0
+  property var readFinished: null
   property int pendingDead: 0
   property string errorText: ""
   property var writeFinished: null
@@ -38,11 +43,19 @@ Item {
     }
     root.opened = true
     root.pendingDead = 0
+    var payload = {}
+    try { payload = JSON.parse(payloadJson || "{}") || {} } catch (error) {}
+    if (payload.action === "editor") {
+      root.editorPending = true
+      root.openEditor()
+    }
     Qt.callLater(function() { if (root.opened) input.forceActiveFocus() })
   }
 
   function close() {
     root.opened = false
+    root.editorPending = false
+    root.recallGeneration++
     if (!root.saving) {
       input.clear()
       root.errorText = ""
@@ -61,6 +74,27 @@ Item {
     else root.open("{}")
   }
 
+  function openEditor() {
+    if (!root.editorPending || !root.opened) return
+    if (!root.configReady) return
+    root.editorPending = false
+    if (root.configError !== "") {
+      root.errorText = root.configError
+      return
+    }
+    if (root.saving) {
+      root.errorText = "wait for the note to finish saving"
+      return
+    }
+    try {
+      var command = Model.editorCommand(Quickshell.env("HOME"), root.notePath)
+      Quickshell.execDetached(command)
+      root.dismiss()
+    } catch (error) {
+      root.errorText = "couldn't open " + root.notePath
+    }
+  }
+
   function runWrite(command, finished) {
     root.writeFinished = finished
     writer.command = command
@@ -73,7 +107,49 @@ Item {
     if (finished) finished(exitCode, exitStatus)
   }
 
+  function runRead(command, finished) {
+    root.readFinished = finished
+    reader.exited = false
+    reader.collected = false
+    reader.output = ""
+    reader.command = command
+    reader.running = true
+  }
+
+  function finishRead(exitCode, exitStatus, output) {
+    var finished = root.readFinished
+    root.readFinished = null
+    if (finished) finished(exitCode, exitStatus, output)
+  }
+
+  function recall() {
+    if (root.saving || root.recalling || !root.opened || input.inputMethodComposing) return
+    if (!root.configReady || root.configError !== "") {
+      root.errorText = root.configError || "loading ~/.config/omajot.json"
+      return
+    }
+    var generation = root.recallGeneration
+    var path = root.notePath
+    var draft = input.text
+    root.recalling = true
+    root.errorText = ""
+    Model.readLast(Quickshell.env("HOME"), path, root.runRead, function(error, text) {
+      root.recalling = false
+      // Discard results after dismissal, config changes, or edits while reading.
+      if (!root.opened || generation !== root.recallGeneration
+          || path !== root.notePath || !root.configReady || root.configError !== ""
+          || input.text !== draft) return
+      if (error !== "") root.errorText = error
+      else if (text !== "") {
+        input.text = text
+        input.cursorPosition = text.length
+        root.pendingDead = 0
+      }
+    })
+  }
+
   function loadConfig(text) {
+    root.recallGeneration++
     root.configReady = true
     try {
       root.notePath = Model.parseConfig(text)
@@ -84,7 +160,7 @@ Item {
   }
 
   function save() {
-    if (root.saving || !root.opened || input.inputMethodComposing) return
+    if (root.saving || root.recalling || !root.opened || input.inputMethodComposing) return
     if (Model.normalizeText(input.text) === "") {
       root.dismiss()
       return
@@ -195,6 +271,11 @@ Item {
       event.accepted = false
       return
     }
+    if (event.key === Qt.Key_Up && event.modifiers === Qt.NoModifier) {
+      root.recall()
+      event.accepted = true
+      return
+    }
     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
       root.pendingDead = 0
       root.save()
@@ -270,6 +351,7 @@ Item {
     printErrors: false
     watchChanges: true
     onFileChanged: {
+      root.recallGeneration++
       root.configReady = false
       reload()
     }
@@ -282,6 +364,36 @@ Item {
       } else {
         root.configError = "couldn't read ~/.config/omajot.json"
       }
+    }
+  }
+
+  Process {
+    id: reader
+    property bool exited: false
+    property bool collected: false
+    property string output: ""
+    property int resultCode: -1
+    property int resultStatus: 1
+    function complete() {
+      if (exited && collected) root.finishRead(resultCode, resultStatus, output)
+    }
+    stdout: StdioCollector {
+      onStreamFinished: {
+        reader.output = text
+        reader.collected = true
+        reader.complete()
+      }
+    }
+    // qmllint disable signal-handler-parameters
+    onExited: (exitCode, exitStatus) => {
+      resultCode = exitCode
+      resultStatus = exitStatus
+      exited = true
+      complete()
+    }
+    // qmllint enable signal-handler-parameters
+    onRunningChanged: {
+      if (!running && !exited && root.readFinished) root.finishRead(-1, 1, "")
     }
   }
 
@@ -374,6 +486,7 @@ Item {
             selectedTextColor: root.menuColors.selectedText
             font.family: root.fontTokens.menuFamily
             font.pixelSize: root.fontTokens.heading
+            onTextChanged: root.recallGeneration++
             Keys.priority: Keys.BeforeItem
             Keys.onPressed: function(event) { root.handleKey(event) }
           }

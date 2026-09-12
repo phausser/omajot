@@ -14,12 +14,15 @@ function overlay() {
     clear() { this.text = ''; this.cursorPosition = 0; },
     forceActiveFocus() {}
   };
-  const root = { configReady: true, configError: '', notePath: '~/omajot.md', opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
+  const root = { editorPending: false, recalling: false, recallGeneration: 0, readFinished: null, configReady: true, configError: '', notePath: '~/omajot.md', opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
+  const reader = { running: false, command: [] };
   const writer = { running: false, command: [] };
   const model = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../OmajotModel.js'), 'utf8'), model);
   const Qt = {
     callLater: fn => fn(),
+    NoModifier: 0,
+    Key_Up: 0x01000013,
     Key_Escape: 0x01000000,
     Key_Return: 0x01000004,
     Key_Enter: 0x01000005,
@@ -54,8 +57,8 @@ function overlay() {
       return text.slice(0, -1);
     }
   };
-  const qs = { env: () => '/tmp/omajot-controller-test', screens: [], clipboardText: '' };
-  const context = vm.createContext({ root, input, writer, Model: model, panel: {},
+  const qs = { launched: [], execDetached(command) { this.launched.push(Array.from(command)); }, env: () => '/tmp/omajot-controller-test', screens: [], clipboardText: '' };
+  const context = vm.createContext({ root, input, writer, reader, Model: model, panel: {},
     Qt, Util, Hyprland: { focusedMonitor: null },
     Quickshell: qs });
   const source = fs.readFileSync(path.join(__dirname, '../Overlay.qml'), 'utf8');
@@ -70,7 +73,7 @@ function overlay() {
     hide() { hostOpen = false; root.close(); },
     summon() { hostOpen = true; root.open('{}'); }
   };
-  return { root, input, writer, quickshell: qs, hostOpen: () => hostOpen,
+  return { root, input, writer, reader, quickshell: qs, hostOpen: () => hostOpen,
     open(text = 'draft') { root.shell.summon(); input.text = text; input.cursorPosition = text.length; },
     finish(code = 0, status = 0) { writer.running = false; root.finishWrite(code, status); } };
 }
@@ -272,4 +275,81 @@ test('pending config prevents writing, but empty Enter still closes', () => {
   ui.input.text = '   ';
   ui.root.save();
   assert.equal(ui.root.opened, false);
+});
+
+test('Up loads the last text and Enter appends it as a new note', () => {
+  const ui = overlay();
+  ui.open('');
+  ui.root.handleKey({key: 0x01000013, modifiers: 0});
+  assert.equal(ui.reader.running, true);
+  ui.root.save();
+  assert.equal(ui.writer.running, false);
+  ui.root.finishRead(0, 0, '2026-09-12 12:34  ä 漢字😀\n');
+  assert.equal(ui.input.text, 'ä 漢字😀');
+  assert.equal(ui.input.cursorPosition, ui.input.text.length);
+  ui.root.save();
+  assert.match(ui.writer.command[5], /  ä 漢字😀\n$/);
+});
+
+test('recall errors and empty history preserve drafts; duplicate reads are blocked', () => {
+  const ui = overlay();
+  ui.open();
+  ui.root.recall();
+  const finished = ui.root.readFinished;
+  ui.root.recall();
+  assert.equal(ui.root.readFinished, finished);
+  ui.root.finishRead(1, 0, '');
+  assert.equal(ui.root.errorText, "couldn't read ~/omajot.md");
+  assert.equal(ui.input.text, 'draft');
+  assert.equal(ui.root.opened, true);
+  ui.root.recall();
+  ui.root.finishRead(0, 0, '');
+  assert.equal(ui.input.text, 'draft');
+});
+
+test('late recall cannot replace newer input, another session, or another path', () => {
+  for (const change of [ui => { ui.input.text = 'new'; },
+    ui => { ui.root.dismiss(); ui.open('new'); },
+    ui => { ui.root.notePath = '~/other.md'; ui.input.text = 'new'; }]) {
+    const ui = overlay();
+    ui.open();
+    ui.root.recall();
+    change(ui);
+    ui.root.finishRead(0, 0, '2026-09-12 12:34  old\n');
+    assert.equal(ui.input.text, 'new');
+    assert.equal(ui.root.recalling, false);
+  }
+});
+
+test('editor IPC opens configured path literally, closes host, and never writes', () => {
+  const ui = overlay();
+  ui.root.notePath = '~/ä $HOME `id`.md';
+  ui.root.open('{"action":"editor"}');
+  assert.deepEqual(ui.quickshell.launched, [['omarchy', 'launch', 'editor', '/tmp/omajot-controller-test/ä $HOME `id`.md']]);
+  assert.equal(ui.root.opened, false);
+  assert.equal(ui.writer.running, false);
+});
+
+test('editor waits for configuration, cancels on close, and preserves invalid-config drafts', () => {
+  const ui = overlay();
+  ui.root.configReady = false;
+  ui.root.open('{"action":"editor"}');
+  assert.equal(ui.quickshell.launched.length, 0);
+  ui.root.loadConfig('{"path":"~/other.md"}');
+  ui.root.openEditor();
+  assert.equal(ui.quickshell.launched[0][3], '/tmp/omajot-controller-test/other.md');
+  const invalid = overlay();
+  invalid.open('draft');
+  invalid.root.loadConfig('{broken');
+  invalid.root.open('{"action":"editor"}');
+  assert.equal(invalid.quickshell.launched.length, 0);
+  assert.equal(invalid.input.text, 'draft');
+  assert.equal(invalid.root.opened, true);
+  const cancelled = overlay();
+  cancelled.root.configReady = false;
+  cancelled.root.open('{"action":"editor"}');
+  cancelled.root.dismiss();
+  cancelled.root.loadConfig('{}');
+  cancelled.root.openEditor();
+  assert.equal(cancelled.quickshell.launched.length, 0);
 });

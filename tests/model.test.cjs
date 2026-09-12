@@ -49,3 +49,11 @@ test('configuration defaults, expands tilde and preserves absolute paths literal
     assert.throws(() => model.parseConfig(JSON.stringify({path: value})));
   for (const text of ['null', '[]', '{broken']) assert.throws(() => model.parseConfig(text));
 });
+
+test('recall strips only the timestamp prefix and enforces the input limit', () => {
+  assert.equal(model.recalledText('2026-09-12 12:34  hello\n'), 'hello');
+  assert.equal(model.recalledText('plain text\r\n'), 'plain text');
+  assert.equal(model.recalledText('2026-09-12 12:34  漢字😀'), '漢字😀');
+  assert.equal(model.recalledText('\n'), '');
+  assert.equal(model.recalledText('a'.repeat(3999) + '😀'), 'a'.repeat(3999));
+});

@@ -49,8 +49,8 @@ Heute landet das in der Clipboard-History, in zufälligen Kommentaren oder nirge
 
 Weitere v1-Funktionen:
 
-- Pfeil-hoch lädt den Text der zuletzt gespeicherten Zeile aus der konfigurierten Datei ohne Zeitstempel zum Bearbeiten. Erneutes Enter hängt eine neue Zeile an; die bestehende Zeile bleibt erhalten.
-- Ein separater Hotkey öffnet die konfigurierte Datei (Default: `~/omajot.md`) im Standard-Editor. Die konkrete freie Belegung vor Integration prüfen; `Super + Shift + N` ist bereits mit „Editor“ belegt.
+- Pfeil-hoch lädt den Text der zuletzt gespeicherten Zeile aus der konfigurierten Datei ohne Zeitstempel zum Bearbeiten. Erneutes Enter hängt eine neue Zeile an; die bestehende Zeile bleibt erhalten. Eine fehlende Datei oder leere letzte Zeile lässt die Eingabe unverändert; Lesefehler zeigen `couldn't read <Pfad>` und erhalten die Eingabe.
+- Ein separater Hotkey öffnet die konfigurierte Datei (Default: `~/omajot.md`) im Standard-Editor. `Super + Alt + N` ist dafür am 2026-09-12 als frei geprüft. Auf anderen Maschinen die Belegung prüfen; `Super + Shift + N` ist bereits mit „Editor“ belegt. Shell-IPC: `summon` mit Payload `{"action":"editor"}` ruft `omarchy launch editor` mit dem aufgelösten Pfad auf. Das Overlay schließt ohne Speichern des Entwurfs.
 
 ## 5. Persistenz
 

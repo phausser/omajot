@@ -120,3 +120,33 @@ test('custom path appends literally and missing parent is not created', async t 
   assert.equal(fs.existsSync(path.dirname(missing)), false);
   assert.deepEqual(fs.readdirSync(home), [path.basename(file)]);
 });
+
+function readLast(home, target) {
+  return new Promise(resolve => model.readLast(home, target, (command, finished) => {
+    const child = spawn(command[0], Array.from(command.slice(1)));
+    let output = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', data => { output += data; });
+    child.on('error', () => finished(-1, 1, ''));
+    child.on('close', (code, signal) => finished(code, signal ? 1 : 0, output));
+  }, (error, text) => resolve({error, text})));
+}
+
+test('recall reads only the last line from a literal configured path without writes', async t => {
+  const home = temporaryHome(t);
+  const file = path.join(home, 'ä $HOME `id`.md');
+  assert.deepEqual(await readLast(home, file), {error: '', text: ''});
+  assert.deepEqual(fs.readdirSync(home), []);
+  for (const ending of ['\n', '']) {
+    const content = '2026-09-12 12:33  first\n2026-09-12 12:34  漢字😀' + ending;
+    fs.writeFileSync(file, content);
+    assert.deepEqual(await readLast(home, file), {error: '', text: '漢字😀'});
+    assert.equal(fs.readFileSync(file, 'utf8'), content);
+  }
+  fs.writeFileSync(file, '');
+  assert.deepEqual(await readLast(home, file), {error: '', text: ''});
+  fs.chmodSync(file, 0o000);
+  assert.equal((await readLast(home, file)).error, "couldn't read " + file);
+  fs.chmodSync(file, 0o600);
+  assert.equal((await readLast(home, home)).error, "couldn't read " + home);
+});
