@@ -356,6 +356,7 @@ Item {
       reload()
     }
     onLoaded: root.loadConfig(text())
+    onTextChanged: root.loadConfig(text())
     onLoadFailed: function(error) {
       root.configReady = true
       if (error === FileViewError.FileNotFound) {

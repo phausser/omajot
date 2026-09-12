@@ -212,7 +212,7 @@ sich auf den bisherigen Funktionsumfang.
 - [x] Hotkey öffnet die konfigurierte Datei (Default `~/omajot.md`) im Standard-Editor; freie Belegung prüfen, `Super + Shift + N` nicht überschreiben
 - [x] Modell-/Datei-/Controller-Tests für Pfad-Konfiguration und letzte Zeile ergänzen; fehlende/leere Datei und Lesefehler behandeln, Eingabe bei Fehler erhalten
 - [x] Plugin-Validierung, Modell-/Datei-/Controller-Tests und QML-Lint ausführen
-- [ ] Erweiterungen lokal integrieren und Pfeil-hoch sowie Editor-Hotkey in der echten Sitzung prüfen
+- [x] Erweiterungen lokal integrieren und Pfeil-hoch sowie Editor-Hotkey in der echten Sitzung prüfen
 - [x] README um Konfiguration, Pfeil-hoch und Editor-Hotkey ergänzen
 
 Pfad-Konfiguration implementiert am 2026-09-12: `~/.config/omajot.json`,
@@ -255,6 +255,21 @@ bestätigt: `nvim /home/pat/omajot.md`, kein Omajot-Layer mehr offen.
 Die temporäre Diagnose-Version wurde durch den Repo-Code ersetzt.
 Physischer Editor-Hotkey, Pfeil-hoch und Konfigurations-Reload in der echten
 Sitzung bleiben offen; deshalb bleibt der gemeinsame Integrationsprüfpunkt offen.
+
+Sitzungsprüfung 2026-09-12, Fortsetzung: GitHub-Lauf
+[34685761070](https://github.com/phausser/omajot/actions/runs/34685761070)
+für `dbd0550` erfolgreich. Pfeil-hoch lädt in der echten Shell den letzten Text;
+Enter hängt genau eine neue Zeile an eine temporäre Testdatei an, ohne den
+vorhandenen Inhalt zu ändern. Config-Reload benötigt zusätzlich `onTextChanged`
+am FileView; diese Korrektur ist implementiert und lokal getestet. Ein Wechsel
+zwischen zwei temporären Pfaden bei offenem Overlay wurde erfolgreich geprüft.
+Die ursprüngliche Konfiguration wurde nach jedem Test wiederhergestellt.
+Der über `wtype` simulierte Editor-Hotkey startete keinen Editor; der physische
+Tastendruck bleibt bis zur Nutzerbestätigung ungeprüft. Editor-IPC war bereits
+in der vorherigen Sitzung bestätigt. Die neue Korrektur ist noch nicht gepusht.
+
+Nutzerbestätigung 2026-09-12: `Super + Alt + N` öffnet die Notizdatei im
+Editor. Damit ist die Sitzungsprüfung der drei v1-Erweiterungen abgeschlossen.
 
 ## 8. Release
 
