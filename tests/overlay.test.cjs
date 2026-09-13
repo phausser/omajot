@@ -11,6 +11,8 @@ function overlay() {
     text: '',
     inputMethodComposing: false,
     cursorPosition: 0,
+    selectionStart: 0,
+    selectionEnd: 0,
     clear() { this.text = ''; this.cursorPosition = 0; },
     forceActiveFocus() {}
   };
@@ -43,23 +45,9 @@ function overlay() {
     MetaModifier: 0x10000000,
     ShiftModifier: 0x02000000
   };
-  const Util = {
-    editsFilter(event, text) {
-      if (!text) return false;
-      if (event.modifiers & (Qt.AltModifier | Qt.MetaModifier)) return false;
-      if (event.key === Qt.Key_U) return event.modifiers === Qt.ControlModifier;
-      return event.key === Qt.Key_Backspace;
-    },
-    editedFilter(event, text) {
-      if (event.key === Qt.Key_U) return '';
-      if (event.modifiers & Qt.ControlModifier)
-        return text.replace(/\s+$/, '').replace(/\S+$/, '');
-      return text.slice(0, -1);
-    }
-  };
   const qs = { launched: [], execDetached(command) { this.launched.push(Array.from(command)); }, env: () => '/tmp/omajot-controller-test', screens: [], clipboardText: '' };
   const context = vm.createContext({ root, input, writer, reader, Model: model, panel: {},
-    Qt, Util, Hyprland: { focusedMonitor: null },
+    Qt, Hyprland: { focusedMonitor: null },
     Quickshell: qs });
   const source = fs.readFileSync(path.join(__dirname, '../Overlay.qml'), 'utf8');
   const functions = source.match(/^  function \w+\([^]*?^  }/gm);
@@ -194,7 +182,11 @@ test('handleKey inserts from event.text or keysym when text is empty', () => {
   assert.equal(ui.input.text, 'aB ');
   const back = event(0x01000003, '');
   ui.root.handleKey(back);
-  assert.equal(ui.input.text, 'aB');
+  assert.equal(back.accepted, false, 'native TextInput handles Backspace');
+  assert.equal(ui.input.text, 'aB ');
+  // Simulate the native deletion; key delivery itself needs a QML session.
+  ui.input.text = 'aB';
+  ui.input.cursorPosition = 2;
   const umlaut = event(0xe4, '');
   ui.root.handleKey(umlaut);
   assert.equal(ui.input.text, 'aBä');
@@ -352,4 +344,80 @@ test('editor waits for configuration, cancels on close, and preserves invalid-co
   cancelled.root.loadConfig('{}');
   cancelled.root.openEditor();
   assert.equal(cancelled.quickshell.launched.length, 0);
+});
+
+test('typing and pasting replace selections in either selection direction', () => {
+  for (const cursor of [1, 3]) {
+    for (const paste of [false, true]) {
+      const ui = overlay();
+      ui.open('abcd');
+      ui.input.selectionStart = 1;
+      ui.input.selectionEnd = 3;
+      ui.input.cursorPosition = cursor;
+      ui.quickshell.clipboardText = 'X';
+      ui.root.handleKey({key: paste ? 0x56 : 0x58, text: paste ? '' : 'X',
+        modifiers: paste ? 0x04000000 : 0, accepted: false});
+      assert.equal(ui.input.text, 'aXd');
+      assert.equal(ui.input.cursorPosition, 2);
+    }
+  }
+});
+
+test('insertion at the limit preserves existing text, cursor and selection', () => {
+  const ui = overlay();
+  ui.open('a'.repeat(4000));
+  ui.input.cursorPosition = 12;
+  ui.root.insertChunk('X');
+  assert.equal(ui.input.text, 'a'.repeat(4000));
+  assert.equal(ui.input.cursorPosition, 12);
+  ui.input.selectionStart = 12;
+  ui.input.selectionEnd = 13;
+  ui.root.insertChunk('😀');
+  assert.equal(ui.input.text, 'a'.repeat(4000));
+  assert.equal(ui.input.selectionStart, 12);
+  assert.equal(ui.input.selectionEnd, 13);
+  ui.root.insertChunk('XYZ');
+  assert.equal(ui.input.text, 'a'.repeat(12) + 'X' + 'a'.repeat(3987));
+  assert.equal(ui.input.cursorPosition, 13);
+});
+
+test('partial paste preserves the suffix and never splits an emoji', () => {
+  const ui = overlay();
+  ui.open('a'.repeat(3997));
+  ui.input.cursorPosition = 2;
+  ui.root.insertChunk('X😀Y');
+  assert.equal(ui.input.text, 'aaX😀' + 'a'.repeat(3995));
+  assert.equal(ui.input.cursorPosition, 5);
+  ui.open('a'.repeat(3998));
+  ui.input.cursorPosition = 2;
+  ui.root.insertChunk('X😀');
+  assert.equal(ui.input.text, 'aaX' + 'a'.repeat(3996));
+  assert.equal(ui.input.cursorPosition, 3);
+});
+
+test('Backspace and Ctrl+Backspace delegate cursor and selection editing to TextInput', () => {
+  for (const modifiers of [0, 0x04000000]) {
+    for (const selected of [false, true]) {
+      const ui = overlay();
+      ui.open('ab😀cd');
+      ui.input.cursorPosition = 4;
+      ui.input.selectionStart = selected ? 1 : 4;
+      ui.input.selectionEnd = 4;
+      const event = {key: 0x01000003, text: '\b', modifiers, accepted: true};
+      ui.root.handleKey(event);
+      assert.equal(event.accepted, false);
+      assert.equal(ui.input.text, 'ab😀cd');
+      assert.equal(ui.input.cursorPosition, 4);
+    }
+  }
+});
+
+test('tilde composes n and N but leaves e and E unchanged', () => {
+  for (const [letter, expected] of [['n', 'ñ'], ['N', 'Ñ'], ['e', 'e'], ['E', 'E']]) {
+    const ui = overlay();
+    ui.open('');
+    ui.root.handleKey({key: 0x01001253, text: '', modifiers: 0});
+    ui.root.handleKey({key: letter.toUpperCase().charCodeAt(0), text: letter, modifiers: 0});
+    assert.equal(ui.input.text, expected);
+  }
 });

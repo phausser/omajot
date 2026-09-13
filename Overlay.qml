@@ -204,7 +204,7 @@ Item {
     else if (dead === Qt.Key_Dead_Circumflex)
       table = "aâeêiîoôuûAÂEÊIÎOÔUÛ"
     else if (dead === Qt.Key_Dead_Tilde)
-      table = "aãeñoõAÃEÑOÕ"
+      table = "aãnñoõAÃNÑOÕ"
     else if (dead === Qt.Key_Dead_Diaeresis)
       table = "aäeëiïoöuüyÿAÄEËIÏOÖUÜYŸ"
     var i = 0
@@ -218,14 +218,18 @@ Item {
 
   function insertChunk(chunk) {
     var current = input.text
-    var pos = typeof input.cursorPosition === "number" ? input.cursorPosition : current.length
-    var next = "" + current.slice(0, pos) + chunk + current.slice(pos)
-    if (next.length > Model.maximumLength)
-      next = next.slice(0, Model.maximumLength)
-    var inserted = next.length - current.length
-    input.text = next
-    if (typeof input.cursorPosition === "number")
-      input.cursorPosition = pos + inserted
+    var start = input.selectionStart
+    var end = input.selectionEnd
+    if (start === end) start = end = input.cursorPosition
+    // Limit only the replacement, preserving the existing suffix and UTF-16 pairs.
+    var available = Model.maximumLength - (current.length - (end - start))
+    var replacement = chunk.slice(0, available)
+    var last = replacement.charCodeAt(replacement.length - 1)
+    if (last >= 0xd800 && last <= 0xdbff)
+      replacement = replacement.slice(0, -1)
+    if (replacement.length === 0) return
+    input.text = current.slice(0, start) + replacement + current.slice(end)
+    input.cursorPosition = start + replacement.length
   }
 
   // fcitx often leaves KeyEvent.text empty on layer-shell while still
@@ -328,11 +332,9 @@ Item {
       event.accepted = false
       return
     }
-    if (Util.editsFilter(event, input.text)) {
-      input.text = Util.editedFilter(event, input.text)
-      if (typeof input.cursorPosition === "number")
-        input.cursorPosition = input.text.length
-      event.accepted = true
+    // TextInput handles cursor/selection-aware deletion and Unicode boundaries.
+    if (event.key === Qt.Key_Backspace) {
+      event.accepted = false
       return
     }
     var chunk = root.textFromEvent(event)

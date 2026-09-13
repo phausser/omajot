@@ -273,6 +273,21 @@ Editor. Damit ist die Sitzungsprüfung der drei v1-Erweiterungen abgeschlossen.
 
 ## 8. Release
 
+- [x] Review-Bugs vom 2026-09-13 beheben: Auswahl ersetzen, bestehenden Text am Zeichenlimit erhalten, Backspace an TextInput delegieren und Tilde-Tabelle korrigieren
+- [x] Regressionstests für die vier Eingabefehler ergänzen und lokale Checks ausführen
+- [ ] Korrigierte Eingabebearbeitung in der echten Omarchy-Sitzung prüfen
+
+Review-Korrektur 2026-09-13: Einfügen ersetzt die Auswahl und kürzt nur den
+neuen Text auf den verfügbaren Platz, ohne Surrogatpaare zu trennen. Backspace
+und Ctrl+Backspace werden für Cursor-, Auswahl- und Unicode-Verhalten an
+TextInput weitergegeben. Tilde+n/N ergibt ñ/Ñ; e/E bleibt unverändert.
+Fünf neue Controller-Tests decken Auswahlrichtungen, Tippen/Paste,
+Zeichenlimit, Emoji-Grenzen, native Backspace-Weitergabe und Tilde ab.
+Alle 23 Controller-Tests sowie Modell-/Dateitests in beiden Zeitzonen,
+Plugin-Validierung, QML-Lint und `git diff --check` lokal bestanden.
+Die Tests simulieren keine native QML-Tastenzustellung. Keine neue lokale
+Installation oder Veröffentlichung; die bekannten IME-Lücken bleiben offen.
+
 - [x] Öffentliches Git-Repo (Name: `omajot`)
 - [x] Keine lokalen Secrets, keine `clonedFrom`-Reste
 - [x] Tag `v0.1.0` = Manifest-version
