@@ -275,7 +275,7 @@ Editor. Damit ist die Sitzungsprüfung der drei v1-Erweiterungen abgeschlossen.
 
 - [x] Review-Bugs vom 2026-09-13 beheben: Auswahl ersetzen, bestehenden Text am Zeichenlimit erhalten, Backspace an TextInput delegieren und Tilde-Tabelle korrigieren
 - [x] Regressionstests für die vier Eingabefehler ergänzen und lokale Checks ausführen
-- [ ] Korrigierte Eingabebearbeitung in der echten Omarchy-Sitzung prüfen
+- [x] Korrigierte Eingabebearbeitung in der echten Omarchy-Sitzung prüfen
 
 Review-Korrektur 2026-09-13: Einfügen ersetzt die Auswahl und kürzt nur den
 neuen Text auf den verfügbaren Platz, ohne Surrogatpaare zu trennen. Backspace
@@ -285,8 +285,24 @@ Fünf neue Controller-Tests decken Auswahlrichtungen, Tippen/Paste,
 Zeichenlimit, Emoji-Grenzen, native Backspace-Weitergabe und Tilde ab.
 Alle 23 Controller-Tests sowie Modell-/Dateitests in beiden Zeitzonen,
 Plugin-Validierung, QML-Lint und `git diff --check` lokal bestanden.
-Die Tests simulieren keine native QML-Tastenzustellung. Keine neue lokale
-Installation oder Veröffentlichung; die bekannten IME-Lücken bleiben offen.
+Die Tests simulieren keine native QML-Tastenzustellung. Die bekannten
+IME-Lücken bleiben offen.
+
+Lokale Integration und Nutzerprüfung 2026-09-13: Die installierte Overlay-Kopie
+enthielt zunächst noch den alten Code. Durch den Stand aus `eb3ec48` ersetzt,
+Plugin validiert und Shell neu gestartet; Dateigleichheit mit dem Repo geprüft.
+Backup: `/tmp/omajot-overlay-before-eb3ec48.qml`.
+Der Nutzer bestätigt: Ctrl+Backspace hinter „zwei“ in „eins zwei drei“ löscht
+jetzt korrekt „zwei“ und erhält „drei“.
+
+Anschließend bestätigt der Nutzer alle Sitzungstests 1–7 als erfolgreich:
+Backspace mitten im Text; Auswahl durch Tippen und Paste in beiden
+Markierungsrichtungen ersetzen; an der richtigen Cursorposition weitertippen;
+Ctrl+Backspace; Einfügen und Ersetzen am 4000-Zeichen-Limit ohne Verlust des
+bestehenden Endes; Ctrl+A/C/X/Z; Speichern genau einer Zeile sowie Verwerfen
+über Escape/Toggle und Fokus-Rückgabe. Damit ist die Prüfung der korrigierten
+Eingabebearbeitung abgeschlossen. Die separate IME-/Compose-/CJK-Prüfung aus
+Abschnitt 5 wird durch diese Bestätigung nicht als abgeschlossen gewertet.
 
 - [x] Öffentliches Git-Repo (Name: `omajot`)
 - [x] Keine lokalen Secrets, keine `clonedFrom`-Reste
