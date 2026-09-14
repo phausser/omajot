@@ -1,6 +1,6 @@
 # Omajot — Quick-Note Overlay für Omarchy
 
-Status: Entwurf  
+Status: v1 / 0.1.0  
 Zielversion: v1  
 Name: Omajot  
 Plugin-id: `io.github.phausser.omajot`  

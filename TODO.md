@@ -309,14 +309,11 @@ Abschnitt 5 wird durch diese Bestätigung nicht als abgeschlossen gewertet.
 - [x] Tag `v0.1.0` = Manifest-version
 - [ ] Optional: Listing auf plugins.omarchy.org
 
-Release-Prüfung 2026-09-12: `phausser/omajot` ist öffentlich. Die versionierten
-Projektdateien wurden auf erkennbare Secrets und `clonedFrom`-Metadaten geprüft;
-keine Funde (kein Nachweis gegen jede denkbare Secret-Form). Plugin-Validierung
-und `git diff --check` erfolgreich. GitHub-Lauf
-[34715414539](https://github.com/phausser/omajot/actions/runs/34715414539)
-für `4057808` ist grün. Annotierter Tag `v0.1.0` zeigt auf diesen geprüften
-Code-Stand; Manifest-Version `0.1.0`. Der anschließende Dokumentationscommit
-aktualisiert nur diesen Prüfstand. Das optionale Listing bleibt offen.
+Release 2026-09-14: Der frühere Tag `v0.1.0` auf `4057808` wurde gelöscht,
+weil er die Eingabekorrekturen vom 2026-09-13 nicht enthielt. README nennt
+jetzt MIT und die vorhandenen Omarchy-Werkzeuge; SPEC-Status ist `v1 / 0.1.0`.
+Der neue annotierte Tag `v0.1.0` zeigt auf diesen Stand. Manifest-Version
+`0.1.0`. Das optionale Listing bleibt offen.
 
 ---
 

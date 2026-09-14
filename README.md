@@ -107,6 +107,14 @@ omarchy plugin remove io.github.phausser.omajot
 
 `~/omajot.md` stays on disk.
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+There are no extra runtime packages. Omajot uses tools already on Omarchy
+(`/bin/sh`, `printf`, `tail`, `omarchy-shell`, `omarchy launch editor`) and
+does not use the network.
+
 ## Spec
 
 The product contract is [SPEC.md](SPEC.md).
