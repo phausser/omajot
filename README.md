@@ -62,6 +62,9 @@ omarchy-shell shell toggle io.github.phausser.omajot
   **Enter** appends the edited text as a new line; the original stays unchanged.
   Empty or missing history leaves your draft unchanged. Read errors preserve it too.
 
+Closing returns focus to the previous window. The field is limited to 4000
+characters; extra input is not stored.
+
 Each saved line looks like:
 
 ```text
