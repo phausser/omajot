@@ -1,12 +1,9 @@
 # Omajot
 
-One key, one line, appended to `~/omajot.md`.
+One key, one line, appended to `~/omajot.md`. A capture overlay for
+[Omarchy](https://omarchy.org/).
 
-Plugin id: `io.github.phausser.omajot`. Overlay for [Omarchy](https://omarchy.org/).
-
-The plugin runs **unsandboxed** inside the existing `omarchy-shell` process. It
-appends plaintext to the configured file (default `~/omajot.md`). Read the code before
-enabling. Removing the plugin does **not** delete `~/omajot.md`.
+![Omajot capture overlay](preview.png)
 
 ## Install
 
@@ -14,93 +11,50 @@ enabling. Removing the plugin does **not** delete `~/omajot.md`.
 omarchy plugin add https://github.com/phausser/omajot.git
 ```
 
-That clones the plugin. It does not enable it. Open
-`~/.config/omarchy/plugins/io.github.phausser.omajot/` and read
-`Overlay.qml` and `OmajotModel.js` first.
+Omajot runs **unsandboxed** inside `omarchy-shell`. Review the code in
+`~/.config/omarchy/plugins/io.github.phausser.omajot/`, then run setup once:
 
 ```bash
-omarchy plugin enable io.github.phausser.omajot
+bash ~/.config/omarchy/plugins/io.github.phausser.omajot/scripts/setup.sh
 ```
 
-## Hotkey
+## Shortcuts
 
-No shortcut is installed automatically. Add one in `~/.config/hypr/bindings.lua`:
+**Super + N** toggles capture; **Super + Alt + N** opens the configured file
+in your default editor.
 
-```lua
-o.bind("SUPER + N", "Omajot",
-  "omarchy-shell shell toggle io.github.phausser.omajot")
-```
-
-`Super + N` was free on the development machine. The spec fallback
-`Super + Shift + N` is already bound to Editor on current Omarchy and is not
-a free substitute.
-
-To open the configured note file in Omarchy's default editor, add:
-
-```lua
-o.bind("SUPER + ALT + N", "Omajot im Editor",
-  [[omarchy-shell shell summon io.github.phausser.omajot '{"action":"editor"}']])
-```
-
-`Super + Alt + N` was free on the development machine on 2026-09-12; check
-bindings on your machine first. This uses the same configured path as capture.
-The editor opens independently, and the overlay closes without saving its draft.
-
-You can also toggle without a key:
-
-```bash
-omarchy-shell shell toggle io.github.phausser.omajot
-```
+Setup backs up `~/.config/hypr/bindings.lua`, adds missing shortcuts, reloads
+Hyprland, and enables Omajot. Existing Omajot shortcuts are kept; conflicts
+stop setup. Use `--check` to check without making changes.
 
 ## Usage
 
-- Type, then **Enter** to append one timestamped line and close.
-- **Escape** or **Super + N** again discards and closes. Nothing is written.
-- **Enter** on an empty (or whitespace-only) field closes without a write.
-- **Ctrl+U** clears the field.
-- **Up** loads the last line from the configured note file without its timestamp.
-  **Enter** appends the edited text as a new line; the original stays unchanged.
-  Empty or missing history leaves your draft unchanged. Read errors preserve it too.
+- **Enter** saves and closes; empty input closes without saving.
+- **Escape** or **Super + N** discards and closes.
+- **Ctrl+U** clears the input.
+- **Up** recalls the last saved text. Saving appends a new line.
 
-Closing returns focus to the previous window. The field is limited to 4000
-characters; extra input is not stored.
+Closing restores the previous window's focus. Input is limited to 4000 characters.
+Write errors keep the overlay open and preserve your draft.
 
-Each saved line looks like:
+Notes are UTF-8 plaintext, appended with local timestamps:
 
 ```text
-2026-09-10 15:01  morgen index auf users.email
+2026-09-10 15:01  Review the pull request tomorrow
 ```
 
-Local time, two spaces, UTF-8, append only. Missing `~/omajot.md` is created as
-that file alone; Omajot never creates `~/Notes`.
-
-On write failure the overlay stays open with `couldn't write ~/omajot.md` and
-keeps the draft.
+Known v1 limitation: IME, dead-key compose, and emoji/CJK input may not work reliably.
 
 ## Configuration
 
-Optionally create `~/.config/omajot.json`:
+The default file is `~/omajot.md`. To change it, create `~/.config/omajot.json`:
 
 ```json
-{
-  "path": "~/inbox.md"
-}
+{"path": "~/inbox.md"}
 ```
 
-Without this file or its `path` entry, Omajot uses `~/omajot.md`. Use an
-absolute path or `~/…`; environment variables and `~user` are not expanded.
-The parent directory must already exist. Omajot creates only the note file,
-never directories. Configuration changes are reloaded automatically.
-
-Invalid or unreadable configuration blocks saving and preserves your draft.
-Write errors show the configured path. Removing the plugin preserves your
-configured note file too.
-
-## Input
-
-Latin letters and German umlaut keys (äöü) work. Dead-key compose, IME, emoji
-pickers, and CJK input often do not on layer-shell with fcitx. That is a known
-v1 limit, not a missing config knob.
+Use an absolute path or `~/…`. The parent directory must exist; Omajot creates
+only the file. Configuration changes reload automatically.
 
 ## Remove
 
@@ -108,16 +62,9 @@ v1 limit, not a missing config knob.
 omarchy plugin remove io.github.phausser.omajot
 ```
 
-`~/omajot.md` stays on disk.
+Your note file is preserved. Remove the Omajot bindings from
+`~/.config/hypr/bindings.lua` if you no longer need them.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
-
-There are no extra runtime packages. Omajot uses tools already on Omarchy
-(`/bin/sh`, `printf`, `tail`, `omarchy-shell`, `omarchy launch editor`) and
-does not use the network.
-
-## Spec
-
-The product contract is [SPEC.md](SPEC.md).
+[MIT](LICENSE). Product contract: [SPEC.md](SPEC.md).

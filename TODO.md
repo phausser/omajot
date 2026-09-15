@@ -183,6 +183,8 @@ kann. Die Kästen werden nicht als bestanden markiert.
 
 ## 6. Docs zum Shippen
 
+- [x] Screenshot `preview.png` in die README einbinden
+- [x] README kürzen, Hinweise auf die Entwicklungsmaschine entfernen und `Super + N` als Standard dokumentieren (2026-09-15)
 - [x] README: Unsandbox-Hinweis, Schreibpfad `~/omajot.md`, Install, Hotkey, Remove
 - [x] Install-Befehl:
 
@@ -316,6 +318,26 @@ Der neue annotierte Tag `v0.1.0` zeigt auf diesen Stand. Manifest-Version
 `0.1.0`. Das optionale Listing bleibt offen.
 
 ---
+
+## 9. Tastenkürzel-Setup
+
+- [x] Expliziten Setup-Befehl mit Konfliktprüfung für `Super + N` und `Super + Alt + N` ergänzen
+- [x] Bestehende Bindings erhalten, fehlende mit Backup ergänzen; Reload prüfen und bei Fehler wiederherstellen
+- [x] Plugin nach erfolgreicher Einrichtung aktivieren; `--check` für Prüfung ohne Änderungen
+- [x] README und SPEC auf den einmaligen Setup-Aufruf umstellen
+- [x] Setup-Tests und lokale Checks ausführen; aktive Sitzung mit `--check` prüfen
+- [ ] Erstinstallation mit neuen Bindings in einer echten Omarchy-Sitzung prüfen
+
+Stand 2026-09-15: 15 Setup-Testfälle mit temporären Dateien und simulierten
+Hyprland-/Omarchy-Befehlen prüfen Anlegen, Wiederholung, teilweise vorhandene
+Bindings, Konflikte, IPC-/Konfigurationsfehler, Backup-Wiederherstellung und
+`--check`. Sie laufen über das vorhandene CI-Testglob mit.
+Alle Tests lokal in Europe/Berlin und America/New_York, Bash-Syntaxprüfung,
+Plugin-Validierung und `git diff --check` erfolgreich. `--check` erkennt beide
+bereits vorhandenen Bindings in der echten Sitzung; keine Systemdateien geändert.
+Omarchy meldet für Lua-Bindings nur Callback-IDs; bestehende Omajot-Aktionen
+werden anhand ihrer Labels erkannt. ShellCheck ist lokal nicht installiert.
+Schreibender Erstinstallationslauf und GitHub-Lauf stehen noch aus.
 
 ## Parkplatz v2 (nicht anfassen)
 

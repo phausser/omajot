@@ -152,6 +152,16 @@ o.bind("SUPER + N", "Omajot",
 
 Vor dem Mergen prüfen, ob `Super + N` auf der Ziel-Omarchy-Version frei ist.
 
+Einrichtung: Nach Installation und Code-Review führt der Nutzer einmal
+`bash ~/.config/omarchy/plugins/io.github.phausser.omajot/scripts/setup.sh` aus.
+Das Skript prüft die aktiven Bindings, ergänzt freie `Super + N` und
+`Super + Alt + N` in `bindings.lua` mit vorherigem Backup, lädt Hyprland neu,
+prüft Konfigurationsfehler und aktiviert das Plugin. Bestehende Omajot-Bindings
+bleiben erhalten; fremde Belegungen führen zum Abbruch. Bei Fehlern nach der
+Änderung wird das Backup wiederhergestellt. `--check` prüft ohne Änderungen.
+Es gibt keinen automatischen Installations-Hook und keinen Setup-Aufruf aus QML.
+Beim Entfernen des Plugins bleiben Bindings zur manuellen Entfernung erhalten.
+
 ## 8. Architektur
 
 Dateien:
