@@ -43,8 +43,6 @@ Notes are UTF-8 plaintext, appended with local timestamps:
 2026-09-10 15:01  Review the pull request tomorrow
 ```
 
-Known v1 limitation: IME, dead-key compose, and emoji/CJK input may not work reliably.
-
 ## Configuration
 
 The default file is `~/omajot.md`. To change it, create `~/.config/omajot.json`:
