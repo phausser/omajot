@@ -32,10 +32,10 @@
 - v1 schreibt ausschließlich nach dem konfigurierten Pfad (Default `~/omajot.md`); `~` zum Home-Verzeichnis auflösen. Den Konfigurationsvertrag anhand der installierten Shell prüfen.
 - Pfeil-hoch lädt den letzten gespeicherten Text ohne Zeitstempel aus dieser Datei. Erneutes Speichern hängt eine neue Zeile an, ohne bestehende Zeilen zu ändern.
 - Ein separater Hyprland-Hotkey öffnet dieselbe konfigurierte Datei im Standard-Editor; die freie Belegung vor Integration prüfen.
-- Fehlt die Datei, nur diese Datei anlegen. Kein `~/Notes`, kein eigenes Datenverzeichnis und kein `mkdir` für Notizen.
+- Fehlt die Datei, nur diese Datei anlegen, mit Modus 0600. Bestehende Dateirechte nicht ändern. Kein `~/Notes`, kein eigenes Datenverzeichnis und kein `mkdir` für Notizen.
 - UTF-8, ausschließlich Append; vorhandenen Inhalt niemals überschreiben.
 - Zeilenformat: `YYYY-MM-DD HH:mm  <getrimmter Text>\n`, lokale Zeit, genau zwei Leerzeichen zwischen Zeitstempel und Text.
-- Schreiboperationen klein halten. Ein lokaler Lese-Hilfsprozess für die letzte Zeile sowie ein Append-Hilfsprozess mit asynchroner Erfolgs-/Fehlerrückmeldung sind erlaubt (Nutzerentscheidung vom 2026-09-10); kein weiterer Quickshell-Prozess. Schreibfehler als Fehlertext zurückgeben; bei fehlenden Rechten, vollem Datenträger oder Verzeichnis als Ziel die Eingabe erhalten und das Overlay offen lassen. Erst nach bestätigtem Erfolg schließen; parallele Schreibstarts verhindern.
+- Schreiboperationen klein halten. Ein lokaler Lese-Hilfsprozess für die letzte Zeile sowie ein Append-Hilfsprozess mit asynchroner Erfolgs-/Fehlerrückmeldung sind erlaubt (Nutzerentscheidung vom 2026-09-10); kein weiterer Quickshell-Prozess. Der Notiztext geht dem Append-Hilfsprozess über die Standardeingabe zu, nicht über die Befehlszeile. Schreibfehler als Fehlertext zurückgeben; bei fehlenden Rechten, vollem Datenträger oder Verzeichnis als Ziel die Eingabe erhalten und das Overlay offen lassen. Erst nach bestätigtem Erfolg schließen; parallele Schreibstarts verhindern.
 - Fehlerstatus: `couldn't write <Pfad>` (Default: `couldn't write ~/omajot.md`). Keine stillen Datenverluste.
 - Für Pfeil-hoch nur die konfigurierte Notizdatei lesen; keine fremden Dateien lesen. Notizen sind Klartext; v1 enthält keine Secrets-Erkennung.
 - README nennt Schreibpfad und unsandboxed Ausführung. Entfernen des Plugins muss `~/omajot.md` erhalten.

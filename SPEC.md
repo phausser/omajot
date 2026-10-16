@@ -60,7 +60,7 @@ Default-Senke: **eine Datei im Home**, kein extra Ordner.
 ~/omajot.md
 ```
 
-Keine Anlage von `~/Notes` oder `~/.local/share/omajot/`. Fehlt die Zieldatei, wird nur diese Datei erzeugt. Das Elternverzeichnis muss existieren; es werden keine Verzeichnisse angelegt.
+Keine Anlage von `~/Notes` oder `~/.local/share/omajot/`. Fehlt die Zieldatei, wird nur diese Datei erzeugt, mit Modus 0600. Das Elternverzeichnis muss existieren; es werden keine Verzeichnisse angelegt. Die Rechte einer bestehenden Datei bleiben unverändert.
 
 Jede gespeicherte Zeile:
 
@@ -188,7 +188,8 @@ Verantwortlichkeiten:
 
 Schreiboperationen klein halten. Ein kurzer lokaler Append-Hilfsprozess meldet
 Erfolg oder Fehler asynchron zurück (Nutzerentscheidung vom 2026-09-10).
-Kein weiterer Quickshell-Prozess. Das Overlay schließt erst nach bestätigtem
+Der Notiztext geht an diesen Prozess über die Standardeingabe, nicht als
+Befehlsargument. Kein weiterer Quickshell-Prozess. Das Overlay schließt erst nach bestätigtem
 Erfolg; während eines Writes keine weiteren Schreibstarts zulassen.
 Bei Write-Fehler Overlay offen lassen und eine Statuszeile zeigen
 (`couldn't write <Pfad>`, beim Default `couldn't write ~/omajot.md`).
@@ -210,6 +211,8 @@ Keine stillen Verluste: Enter ohne erfolgreichen Write schließt nicht.
 
 - Plugin läuft unsandboxed im `omarchy-shell`.
 - Schreibt nur `~/omajot.md` (bzw. den konfigurierten Pfad).
+- Der Append-Hilfsprozess erhält den Notiztext über die Standardeingabe.
+- Eine neu angelegte Notizdatei hat den Modus 0600.
 - Liest für Pfeil-hoch nur die konfigurierte Notizdatei; keine fremden Dateien.
 - Rendert die Eingabe als Plaintext, nicht als Rich-Text/HTML.
 - README muss den Schreibpfad `~/omajot.md` und den Unsandbox-Hinweis enthalten.

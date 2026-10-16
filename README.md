@@ -37,7 +37,10 @@ stop setup. Use `--check` to check without making changes.
 Closing restores the previous window's focus. Input is limited to 4000 characters.
 Write errors keep the overlay open and preserve your draft.
 
-Notes are UTF-8 plaintext, appended with local timestamps:
+Notes are UTF-8 plaintext, appended with local timestamps. A missing file is
+created with mode `0600`; an existing file keeps its permissions. A file
+created by an older Omajot may be readable by other local users; `chmod 600
+~/omajot.md` limits it to your user.
 
 ```text
 2026-09-10 15:01  Review the pull request tomorrow

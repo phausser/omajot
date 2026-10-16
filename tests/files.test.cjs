@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
-const { spawn } = require('node:child_process');
+const { spawn, execFileSync } = require('node:child_process');
 const { test } = require('node:test');
 
 const model = vm.createContext({});
@@ -16,10 +16,36 @@ function temporaryHome(t) {
   return home;
 }
 
-function run(command, finished) {
-  const child = spawn(command[0], Array.from(command.slice(1)), { stdio: 'ignore' });
+function run(command, finished, input) {
+  const child = spawn(command[0], Array.from(command.slice(1)), { stdio: ['pipe', 'ignore', 'ignore'] });
   child.on('error', () => finished(-1, 1));
   child.on('close', (code, signal) => finished(code, signal ? 1 : 0));
+  child.stdin.on('error', () => {});
+  child.stdin.end(input, 'utf8');
+}
+
+function helperArguments(pid) {
+  const cmdline = `/proc/${pid}/cmdline`;
+  if (fs.existsSync(cmdline)) return fs.readFileSync(cmdline).toString('utf8');
+  return execFileSync('ps', ['-ww', '-p', String(pid), '-o', 'args='], { encoding: 'utf8' });
+}
+
+function waitForArguments(child) {
+  const pause = new Int32Array(new SharedArrayBuffer(4));
+  const deadline = Date.now() + 2000;
+  let lastError;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error('helper exited before its command line could be checked');
+    try {
+      const listed = helperArguments(child.pid);
+      if (listed.includes('read -r')) return listed;
+    } catch (error) {
+      lastError = error;
+    }
+    Atomics.wait(pause, 0, 0, 20);
+  }
+  throw new Error('helper command line was not visible' + (lastError ? ': ' + lastError.message : ''));
 }
 
 function append(home, text, runner = run) {
@@ -70,8 +96,10 @@ test('read-only target returns an error and preserves content', async t => {
   const home = temporaryHome(t);
   const file = path.join(home, 'omajot.md');
   fs.writeFileSync(file, 'existing', { mode: 0o400 });
+  fs.chmodSync(file, 0o400);
   assert.equal(await append(home, 'keep me'), model.writeError);
   assert.equal(fs.readFileSync(file, 'utf8'), 'existing');
+  assert.equal(fs.statSync(file).mode & 0o777, 0o400);
 });
 
 test('write failure after opening a temporary file returns an error', async t => {
@@ -79,10 +107,10 @@ test('write failure after opening a temporary file returns an error', async t =>
   const file = path.join(home, 'omajot.md');
   fs.writeFileSync(file, 'existing');
   // A zero file-size limit forces a real failed write, without filling a disk.
-  const limitedRun = (command, finished) => {
+  const limitedRun = (command, finished, input) => {
     const limited = Array.from(command);
     limited[2] = 'ulimit -c 0; ulimit -f 0; ' + limited[2];
-    run(limited, finished);
+    run(limited, finished, input);
   };
   assert.equal(await append(home, 'keep me', limitedRun), model.writeError);
   assert.equal(fs.readFileSync(file, 'utf8'), 'existing');
@@ -106,6 +134,51 @@ test('rejects NUL arguments before starting the helper', async () => {
   assert.equal(await append('/tmp', 'a\0b', runner), model.writeError);
   assert.equal(await append('/tmp/\0', 'note', runner), model.writeError);
   assert.equal(called, false);
+});
+
+test('note text stays off the process list and a new file is private', async t => {
+  const home = temporaryHome(t);
+  fs.chmodSync(home, 0o755);
+  const secret = 'private note $(id) `whoami`';
+  const file = path.join(home, 'omajot.md');
+  const seen = {};
+  const runner = (command, finished, input) => {
+    // Start from a permissive umask. The helper has to tighten it itself.
+    const loose = Array.from(command);
+    loose[2] = 'umask 022; ' + loose[2];
+    seen.command = command.slice();
+    seen.input = input;
+    const child = spawn(loose[0], loose.slice(1), { stdio: ['pipe', 'ignore', 'ignore'] });
+    child.on('error', () => finished(-1, 1));
+    child.on('close', (code, signal) => finished(code, signal ? 1 : 0));
+    child.stdin.on('error', () => {});
+    try {
+      seen.listed = waitForArguments(child);
+      seen.existedWhileWaiting = fs.existsSync(file);
+    } catch (error) {
+      seen.inspectionError = error;
+    } finally {
+      if (child.stdin.writable) child.stdin.end(input, 'utf8');
+    }
+  };
+  assert.equal(await append(home, secret, runner), '');
+  if (seen.inspectionError) throw seen.inspectionError;
+  assert.equal(seen.command.some(part => String(part).includes(secret)), false);
+  assert.equal(seen.input.includes(secret), true);
+  assert.equal(seen.listed.includes(secret), false);
+  assert.equal(seen.existedWhileWaiting, false);
+  assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+  assert.equal(fs.readFileSync(file, 'utf8'), `2026-09-10 15:01  ${secret}\n`);
+});
+
+test('append keeps the mode of an existing note file', async t => {
+  const home = temporaryHome(t);
+  const file = path.join(home, 'omajot.md');
+  fs.writeFileSync(file, 'existing\n');
+  fs.chmodSync(file, 0o644);
+  assert.equal(await append(home, 'next'), '');
+  assert.equal(fs.statSync(file).mode & 0o777, 0o644);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'existing\n2026-09-10 15:01  next\n');
 });
 
 test('custom path appends literally and missing parent is not created', async t => {

@@ -51,8 +51,9 @@ function formatLine(text, now) {
     + ":" + pad(date.getMinutes(), 2) + "  " + value + "\n"
 }
 
-// run(command, finished) is supplied by the host's Process adapter.
+// run(command, finished, input) is supplied by the host's Process adapter.
 // finished(exitCode, exitStatus) uses QProcess conventions (0 = normal exit).
+// input is the full line and is written only to the helper's standard input.
 // The adapter must also report startup failures, and serialize writes.
 // done(error) receives "" on success (including empty input), otherwise a path-specific write error.
 function append(text, home, run, done, now, configuredPath) {
@@ -65,19 +66,30 @@ function append(text, home, run, done, now, configuredPath) {
   }
 
   var command
+  var line
   try {
-    var line = formatLine(text, now)
+    line = formatLine(text, now)
     if (line === "") {
       finish("")
       return
     }
     var path = resolvePath(home, configuredPath)
-    // OS argument strings cannot carry NUL. Fail rather than silently truncate.
+    // Arguments and the line reader cannot carry NUL. Fail rather than truncate.
     if (line.indexOf("\u0000") !== -1 || path.indexOf("\u0000") !== -1)
       throw new Error(writeError)
-    // Only this fixed script is shell code. Path and text are separate arguments.
-    // >> opens with O_APPEND and creates only the file if it is missing.
-    command = ["/bin/sh", "-c", 'printf "%s" "$2" >> "$1"', "omajot", path, line]
+    // Only this fixed script is shell code. The note is not a command argument:
+    // other local users can read argv from the process list. A missing file is
+    // created with mode 0600; an existing file keeps its permissions.
+    // >> opens with O_APPEND and never rewrites earlier bytes.
+    command = ["/bin/sh", "-c",
+      "umask 077 || exit 1\n"
+        + "IFS= read -r line || exit 1\n"
+        + "if [ ! -e \"$1\" ] && [ ! -L \"$1\" ]; then\n"
+        + "  : >> \"$1\" || exit 1\n"
+        + "  /bin/chmod 600 \"$1\" || exit 1\n"
+        + "fi\n"
+        + "printf '%s\\n' \"$line\" >> \"$1\"\n",
+      "omajot", path]
   } catch (error) {
     finish(failure)
     return
@@ -86,7 +98,7 @@ function append(text, home, run, done, now, configuredPath) {
   try {
     run(command, function(exitCode, exitStatus) {
       finish(exitCode === 0 && exitStatus === 0 ? "" : failure)
-    })
+    }, line)
   } catch (error) {
     finish(failure)
   }

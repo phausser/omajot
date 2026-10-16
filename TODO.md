@@ -75,6 +75,10 @@ Dateigrößenlimit erzwungene Schreibstörung (kein echter voller Datenträger).
 Die QML-Process-Anbindung einschließlich Startfehlerbehandlung und Sperre
 gegen parallele Writes sowie Erhalt der Eingabe ist in Abschnitt 3 umgesetzt.
 
+Sicherheitskorrektur 2026-10-16: der Notiztext geht dem Hilfsprozess über die
+Standardeingabe zu und steht nicht in der Befehlszeile. Eine neue Datei wird
+mit Modus 0600 angelegt; bestehende Dateirechte bleiben unverändert.
+
 ## 3. Overlay-UI
 
 - [x] `Overlay.qml` als Entry (Preview aus Abschnitt 1)

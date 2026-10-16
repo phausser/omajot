@@ -18,7 +18,13 @@ function overlay() {
   };
   const root = { editorPending: false, recalling: false, recallGeneration: 0, readFinished: null, configReady: true, configError: '', notePath: '~/omajot.md', opened: false, saving: false, pendingDead: 0, errorText: '', writeFinished: null, moduleName: 'io.github.phausser.omajot' };
   const reader = { running: false, command: [] };
-  const writer = { running: false, command: [] };
+  const writer = {
+    running: false,
+    command: [],
+    stdinEnabled: false,
+    input: '',
+    write(data) { this.input = data; }
+  };
   const model = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../OmajotModel.js'), 'utf8'), model);
   const Qt = {
@@ -72,6 +78,8 @@ test('Enter waits for success and ignores duplicate submissions', () => {
   ui.root.save();
   const command = ui.writer.command;
   const callback = ui.root.writeFinished;
+  assert.match(ui.writer.input, /  draft\n$/);
+  assert.equal(command.some(part => String(part).includes('draft')), false);
   ui.root.save();
   assert.equal(ui.writer.command, command);
   assert.equal(ui.root.writeFinished, callback);
@@ -280,7 +288,8 @@ test('Up loads the last text and Enter appends it as a new note', () => {
   assert.equal(ui.input.text, 'ä 漢字😀');
   assert.equal(ui.input.cursorPosition, ui.input.text.length);
   ui.root.save();
-  assert.match(ui.writer.command[5], /  ä 漢字😀\n$/);
+  assert.equal(ui.writer.command.some(part => String(part).includes('ä 漢字😀')), false);
+  assert.match(ui.writer.input, /  ä 漢字😀\n$/);
 });
 
 test('recall errors and empty history preserve drafts; duplicate reads are blocked', () => {

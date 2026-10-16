@@ -95,10 +95,15 @@ Item {
     }
   }
 
-  function runWrite(command, finished) {
+  function runWrite(command, finished, input) {
     root.writeFinished = finished
+    // Open stdin before start, then close it after the note is queued. The note
+    // stays off the command line, which other local users can read.
+    writer.stdinEnabled = true
     writer.command = command
     writer.running = true
+    writer.write(input)
+    writer.stdinEnabled = false
   }
 
   function finishWrite(exitCode, exitStatus) {
@@ -174,7 +179,7 @@ Item {
     Model.append(input.text, Quickshell.env("HOME"), root.runWrite, function(error) {
       if (error === "") {
         // Drop the draft and host panel before releasing the write lock.
-        // A second Enter can arrive after a fast printf and must not append again.
+        // A second Enter can arrive after a fast write and must not append again.
         input.clear()
         root.errorText = ""
         root.dismiss()
