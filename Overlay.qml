@@ -34,7 +34,7 @@ Item {
   function open(payloadJson) {
     var monitor = Hyprland.focusedMonitor
     if (monitor) {
-      for (var i = 0; i < Quickshell.screens.length; i++) {
+      for (let i = 0; i < Quickshell.screens.length; i++) {
         if (Quickshell.screens[i].name === monitor.name) {
           panel.screen = Quickshell.screens[i]
           break
@@ -87,7 +87,7 @@ Item {
       return
     }
     try {
-      var command = Model.editorCommand(Quickshell.env("HOME"), root.notePath)
+      let command = Model.editorCommand(Quickshell.env("HOME"), root.notePath)
       Quickshell.execDetached(command)
       root.dismiss()
     } catch (error) {
@@ -244,9 +244,9 @@ Item {
   // before TextInput sees a preedit, and leaves the follow-up letter empty.
   function textFromEvent(event) {
     if (event.text) {
-      var out = ""
-      for (var i = 0; i < event.text.length; i++) {
-        var code = event.text.charCodeAt(i)
+      let out = ""
+      for (let i = 0; i < event.text.length; i++) {
+        let code = event.text.charCodeAt(i)
         if (code >= 32 && code !== 127) out += event.text.charAt(i)
       }
       if (out.length) return out
@@ -259,7 +259,7 @@ Item {
     if (key >= Qt.Key_A && key <= Qt.Key_Z)
       return shift ? String.fromCharCode(key) : String.fromCharCode(key + 32)
     if (key >= 32 && key <= 255 && key !== 127) {
-      var ch = String.fromCharCode(key)
+      let ch = String.fromCharCode(key)
       return shift ? ch : ch.toLowerCase()
     }
     return ""
@@ -303,7 +303,7 @@ Item {
       return
     }
     if (event.key === Qt.Key_V && event.modifiers === Qt.ControlModifier) {
-      var clip = Quickshell.clipboardText || ""
+      let clip = Quickshell.clipboardText || ""
       clip = clip.replace(/[\r\n\u2028\u2029]+/g, " ")
       if (clip) {
         root.insertChunk(clip)
@@ -320,10 +320,10 @@ Item {
       return
     }
     if (root.pendingDead) {
-      var dead = root.pendingDead
+      let dead = root.pendingDead
       root.pendingDead = 0
-      var letter = root.textFromEvent(event)
-      var composed = root.composeChar(dead, letter)
+      let letter = root.textFromEvent(event)
+      let composed = root.composeChar(dead, letter)
       if (composed) {
         root.insertChunk(composed)
         event.accepted = true
